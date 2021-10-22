@@ -1,10 +1,9 @@
-import clc from 'colorette'
+import {red, bold, italic, yellow} from 'colorette'
 
 interface CliParserOptions {
     info?: string,
     footer?: string,
     version?: string,
-    maxError?: number,
     stopFlags?: "--" | ";" | null,
     defaultArg?: boolean
 }
@@ -22,7 +21,8 @@ interface CliContext {
     parser: CliParser,
     name: string,
     description: string,
-    options: CliParserOptions
+    options: CliParserOptions,
+    argv: string[]
 }
 
 interface CliArgParams {
@@ -45,10 +45,10 @@ interface CliArguments {
 
 
 interface Command {
-    name: string,
-    description: string,
+    name?: string,
+    description?: string,
     arguments?: CliArguments,
-    call: (ctx: CliContext) => void
+    call?: (ctx: CliContext) => void
 }
 interface CliCommand {
     [key:string]: Command
@@ -60,13 +60,13 @@ class CliParser {
     protected arguments: CliArguments = {}
     protected argumentsAlias: {[key:string]: true} = {}
     
-    protected argv: string[] = []
-    
     protected errors: CliError[] = []
 
     protected _ctx: CliContext | null = null
 
     protected options: CliParserOptions
+
+    protected argv: string[] = []
     
     constructor(public name: string, public description: string, options: CliParserOptions = {}) {
 
@@ -91,7 +91,7 @@ class CliParser {
             }
         }
     }
-    
+
     addArgument(name: string, arg: CliArg = {}) {
         
         if (name in this.arguments) {
@@ -100,19 +100,34 @@ class CliParser {
         if (arg.alias && arg.alias.length != 1) {
             throw new Error(`alias options '${arg.alias}' need to be only one char`)
         }
+
+        // set empty params
+        if (!arg.params) {
+            arg.params = []
+        }
         // TODO check command alerady exist
+        arg.name = name
         this.arguments[name] = arg
     }
 
-    addCommand(name: string, cmd: Command) {
+    addCommand(name: string, description: string, cmd: Command = {}) {
 
         if (name in this.commands) {
             throw new Error(`Command '${name}' already set`)
         }
         if (!cmd.arguments) {
             cmd.arguments = {}
+        } else {
+            // set empty params
+            for (const key in cmd.arguments) {
+                const arg = cmd.arguments[key]
+                if (!arg.params) {
+                    arg.params = []
+                }
+            }
         }
         cmd.name = name
+        cmd.description = description
         this.commands[name] = cmd
     }
 
@@ -166,7 +181,7 @@ class CliParser {
                 else
                 {
                     this.errors.push({
-                        text: `need ${clc.yellow(arg.params.length)} arguments after flag '${name}'.`,
+                        text: `need ${yellow(arg.params.length)} arguments after flag '${name}'.`,
                         argvi: index + i
                     })
                     break
@@ -237,7 +252,7 @@ class CliParser {
                     else
                     {
                         this.errors.push({
-                            text: `Found argument '${clc.yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
+                            text: `Found argument '${yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
                             argvi: start++,
                             start: 2,
                             end: val.length - 2
@@ -247,7 +262,7 @@ class CliParser {
                 else
                 {
                     this.errors.push({
-                        text: `Empty argument '${clc.yellow('--')}' which wasn't expected.`,
+                        text: `Empty argument '${yellow('--')}' which wasn't expected.`,
                         argvi: start++,
                         start: 2,
                         end: val.length - 2
@@ -268,7 +283,7 @@ class CliParser {
                     else
                     {
                         this.errors.push({
-                            text: `Found argument '${clc.yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
+                            text: `Found argument '${yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
                             argvi: start,
                             start: i,
                             end: 1
@@ -281,7 +296,7 @@ class CliParser {
             else
             {
                 this.errors.push({
-                    text: `Empty argument '${clc.yellow('-')}' which wasn't expected.`,
+                    text: `Empty argument '${yellow('-')}' which wasn't expected.`,
                     argvi: start++
                 })
             }
@@ -308,24 +323,23 @@ class CliParser {
             //parse options
             const [flags, anyArgs] = this.parseFlags(argv, args, 1)
 
-            if (!this.errors.length) {
-                this.printError(argv)
+            if (this.errors.length) {
                 return false
             }
-            const callFalg = this._getCallFlag(flags)
+            const callFalg = this._getCallFlag(flags, args)
             if (callFalg) {
                 callFalg(this._createContext(flags, anyArgs, cmd))
             }
             else if (cmd.call) {
                 cmd.call(this._createContext(flags, anyArgs, cmd))
             }
+            return true
         }
         else if (argv[0][0] == '-') {
             this.errors.push({ text: `${this.name ?? 'programme'} need to start with command` })
         } else {
-            this.errors.push({ text: `no such subcommand: '${clc.yellow(argv[0])}''`, argvi: 0})
+            this.errors.push({ text: `no such subcommand: '${yellow(argv[0])}''`, argvi: 0})
         }
-        this.printError(argv)
         return false
     }
 
@@ -333,17 +347,18 @@ class CliParser {
         //parse options
         const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0)
         if (this.errors.length) {
-            this.printError(argv)
             return false
         }
-        const call = this._getCallFlag(flags)        
+        const call = this._getCallFlag(flags, this.arguments)
+        
         if (call) {
-            call(this._createContext(flags, anyArgs))
+            call(this._createContext(flags, anyArgs,))
         }
         return true
     }
 
     parse(argv: string[]): boolean {
+        this.argv = argv
         if (argv.length == 0) {
             this.usage()
         }
@@ -355,12 +370,12 @@ class CliParser {
         return true
     }
 
-    _getCallFlag(flags: CliArguments): Function | null {
-        const keys = Object.keys(flags)
-        for (let i = 0; i < keys.length; i++) {
-            const fl = flags[keys[i]]
-            if (fl.call) {
-                return fl.call
+    _getCallFlag(flags: CliArguments, args: CliArguments): Function | null {
+
+        for (const key in flags) {
+            const call = args[key].call
+            if (call) {
+                return call
             }
         }
         return null
@@ -380,7 +395,8 @@ class CliParser {
             parser: this,
             name: this.name,
             description: this.description,
-            options: this.options
+            options: this.options,
+            argv: this.argv
         }
         if (cmd) {
             ctx.cmd = cmd
@@ -396,18 +412,19 @@ class CliParser {
 
     // format
 
-    printError(argv: string[]) {
+    printError(max: number | null = null) {
         
+        const argv = this.argv
         const argvLine = argv.join(' ') + "\n"
 
         let errors = this.errors
-        if (this.options.maxError) {
-            errors = [...this.errors].splice(0, this.options.maxError)
+        if (max !== null) {
+            errors = [...this.errors].splice(0, max)
         }
         
         let str = ""
         errors.forEach(err => {
-            str += `${clc.red(clc.bold('error'))}: ${err.text}\n`
+            str += `${red(bold('error'))}: ${err.text}\n`
             
             if (err.argvi !== undefined) {
 
@@ -422,20 +439,20 @@ class CliParser {
                 const len = argv[err.argvi].length
                 let tild
                 if (err.start != undefined && err.end != undefined) {
-                    tild = clc.red("~".repeat(err.start)) + clc.red(clc.bold("^".repeat(err.end)))
+                    tild = red("~".repeat(err.start)) + red(bold("^".repeat(err.end)))
                     const fin = len - (err.start + err.end)
                     if (fin > 0) {
-                        tild += clc.red("~".repeat(fin))
+                        tild += red("~".repeat(fin))
                     }
                 } else {
-                    tild = clc.red(clc.bold("^".repeat(len)))
+                    tild = red(bold("^".repeat(len)))
                 }
                 
                 str += `${" ".repeat(spaces)}${tild}\n`
             }
         })
         if (this.errors.length >= 5) {
-            str += `total errors: ${clc.red(clc.bold(this.errors.length))}`
+            str += `total errors: ${red(bold(this.errors.length))}`
         }
         console.error(str)
     }
@@ -469,7 +486,7 @@ class CliParser {
             }
             // space padding 
             str += " ".repeat(padding - mem[key] + 1)
-            str += opt.description ?? clc.italic("no information.")
+            str += opt.description ?? italic("no information.")
         })
         return str
     }
@@ -543,7 +560,7 @@ class CliParser {
         if (this.options.footer) {
             str += `\n\n${this.options.footer}`
         }
-        console.log(str)
+        console.info(str)
     }
 
 

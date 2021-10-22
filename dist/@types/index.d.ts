@@ -2,7 +2,6 @@ interface CliParserOptions {
     info?: string;
     footer?: string;
     version?: string;
-    maxError?: number;
     stopFlags?: "--" | ";" | null;
     defaultArg?: boolean;
 }
@@ -20,6 +19,7 @@ interface CliContext {
     name: string;
     description: string;
     options: CliParserOptions;
+    argv: string[];
 }
 interface CliArgParams {
     type: Object | Number | Boolean;
@@ -37,10 +37,10 @@ interface CliArguments {
     [key: string]: CliArg;
 }
 interface Command {
-    name: string;
-    description: string;
+    name?: string;
+    description?: string;
     arguments?: CliArguments;
-    call: (ctx: CliContext) => void;
+    call?: (ctx: CliContext) => void;
 }
 interface CliCommand {
     [key: string]: Command;
@@ -53,23 +53,23 @@ declare class CliParser {
     protected argumentsAlias: {
         [key: string]: true;
     };
-    protected argv: string[];
     protected errors: CliError[];
     protected _ctx: CliContext | null;
     protected options: CliParserOptions;
+    protected argv: string[];
     constructor(name: string, description: string, options?: CliParserOptions);
     addArgument(name: string, arg?: CliArg): void;
-    addCommand(name: string, cmd: Command): void;
+    addCommand(name: string, description: string, cmd?: Command): void;
     protected convertType(type: any, value: string): string | boolean | number;
     advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliArguments, name: string): number;
     parseFlags(argv: string[], choices: CliArguments, start?: number): [CliArguments, string[]];
     parseCommand(argv: string[]): boolean;
     parseArguments(argv: string[]): boolean;
     parse(argv: string[]): boolean;
-    _getCallFlag(flags: CliArguments): Function | null;
+    _getCallFlag(flags: CliArguments, args: CliArguments): Function | null;
     get context(): CliContext;
     _createContext(flags: CliArguments, anyArgs: string[], cmd?: Command | null): CliContext;
-    printError(argv: string[]): void;
+    printError(max?: number | null): void;
     protected formatOptions(options: CliArguments, prefix?: string): string;
     protected formatCommands(cmds: CliCommand): string;
     commandUsage(cmd: Command | string): void;
