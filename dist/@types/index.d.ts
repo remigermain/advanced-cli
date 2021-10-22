@@ -1,76 +1,77 @@
-declare type stopParseChoices = "--" | ";" | null;
-interface ArgParserOptions {
-    stopFlags?: stopParseChoices;
-    name?: string;
-    description?: string;
-    progStatus?: string;
+interface CliParserOptions {
+    info?: string;
     footer?: string;
     version?: string;
     maxError?: number;
+    stopFlags?: "--" | ";" | null;
 }
-interface ArgParams {
+interface CliError {
+    text: string;
+    argvi?: number;
+    start?: number;
+    end?: number;
+}
+interface CliContext {
+    cmd?: Command;
+    flags: CliArguments;
+    anyArgs: string[];
+    parser: CliParser;
+    name: string;
+    description: string;
+    options: CliParserOptions;
+}
+interface CliArgParams {
     type: Object | Number | Boolean;
     default?: string | number | boolean;
     validator?: (value: string) => any;
 }
-interface Arg {
-    mFlag?: string;
-    sFlag?: string;
-    description: string;
-    params?: ArgParams[];
-    call?: (ctx: ArgParserContext) => void;
+interface CliArg {
+    alias?: string;
+    description?: string;
+    params?: CliArgParams[];
+    call?: (ctx: CliContext) => void;
+}
+interface CliArguments {
+    [key: string]: CliArg;
 }
 interface Command {
     name: string;
     description: string;
-    arguments?: Arg[];
-    call: (ctx: ArgParserContext) => void;
+    arguments?: CliArguments;
+    call: (ctx: CliContext) => void;
 }
-interface infoFlag {
-    _declare: Arg;
-    params?: any[];
+interface CliCommand {
+    [key: string]: Command;
 }
-interface ArgParserContext {
-    flags: {
-        [key: string]: infoFlag;
+declare class CliParser {
+    name: string;
+    description: string;
+    options: CliParserOptions;
+    protected commands: CliCommand;
+    protected arguments: CliArguments;
+    protected argumentsAlias: {
+        [key: string]: true;
     };
-    arguments: string[];
-    options: ArgParserOptions;
-    parser: ArgParser;
-    cmd?: Command;
-}
-interface ErrorArgParser {
-    text: string;
-    idxArgv: number;
-    start?: number;
-    end?: number;
-}
-declare class ArgParser {
-    protected options: ArgParserOptions;
-    protected arguments: Arg[];
-    protected commands: Command[];
     protected argv: string[];
-    protected errors: ErrorArgParser[];
-    protected final: {
-        [key: string]: infoFlag;
-    };
-    protected anyArgs: string[];
-    constructor(options?: ArgParserOptions);
-    protected checkArguments(args: Arg[], cmd?: Command | null): void;
-    addArgument(arg: Arg): void;
-    addCommand(cmd: Command): void;
+    protected errors: CliError[];
+    protected _ctx: CliContext | null;
+    constructor(name: string, description: string, options?: CliParserOptions);
+    protected checkAlias(alias: string | undefined, suffix?: string): void;
+    addArgument(name: string, arg?: CliArg): void;
+    addCommand(name: string, cmd: Command): void;
     protected convertType(type: any, value: string): string | boolean | number;
-    protected parseFlag(acutal: string, flag: Arg, index: number): number;
-    protected _parseOption(args: Arg[], i?: number): boolean;
-    protected checkArgumentsCall(): Function | null;
-    protected context(): ArgParserContext;
-    protected parseOptions(): boolean;
-    protected parseCommand(): boolean;
+    advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliArguments, name: string): number;
+    parseFlags(argv: string[], choices: CliArguments, start?: number): [CliArguments, string[]];
+    parseCommand(argv: string[]): void;
+    parseArguments(argv: string[]): void;
     parse(argv: string[]): boolean;
-    printError(): void;
-    protected formatOptions(options: Arg[], prefix?: string): string[];
-    protected formatSubCommands(sub: Command[]): string[];
-    commandUsage(cmd: Command): void;
+    _getCallFlag(flags: CliArguments): Function | null;
+    get context(): CliContext;
+    _createContext(flags: CliArguments, anyArgs: string[], cmd?: Command | null): CliContext;
+    printError(argv: string[]): void;
+    protected formatOptions(options: CliArguments, prefix?: string): string;
+    protected formatCommands(cmds: CliCommand): string;
+    commandUsage(cmd: Command | string): void;
     usage(): void;
 }
-export default ArgParser;
+export default CliParser;

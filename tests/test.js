@@ -14,34 +14,35 @@ const p = new ArgParser(
 //     description: "Run a command in a new container"
 // })
 
-p.addCommand({
-    name: "images",
-    description: "Run a command in a new container",
-    arguments: [
-        {
-            mFlag: "volume-driver",
-            description: "Optional volume driver for the container",
-            arguments: [{
-                type: String
-            }]
-        }, {
-            sFlag: "t",
-            mFlag: "tty",
-            description: "Allocate a pseudo-TTY"
-        },
-    ],
-    call({ flags, arguments }) {
-        console.log("invokerrrrrrrrrr")
-    }
-})
+p.addCommand(
+    "images",
+    {
+        description: "Run a command in a new container",
+        arguments: [
+            {
+                name: "volume-driver",
+                description: "Optional volume driver for the container",
+                arguments: [{
+                    type: String
+                }]
+            }, {
+                alias: "t",
+                name: "tty",
+                description: "Allocate a pseudo-TTY"
+            },
+        ],
+        call({ flags, arguments }) {
+            console.log("invokerrrrrrrrrr")
+        }
+    })
 
 // p.addArgument({
-//     sFlag: "i",
+//     alias: "i",
 // })
 
 // p.addArgument({
-//     sFlag: "g",
-//     mFlag: "type",
+//     alias: "g",
+//     name: "type",
 //     params: [
 //         {
 //             type: Boolean,
@@ -62,24 +63,17 @@ const pp = new ArgParser(
     }
 )
 
-pp.addArgument({ mFlag: "foo" })
-pp.addArgument({ mFlag: "bar", arguments: [{ type: String }] })
-pp.addArgument({ sFlag: "m" })
-pp.addArgument({ sFlag: "t" })
+pp.addArgument("vol", { name: "bar", arguments: [{ type: String }] })
+pp.addCommand("images", { description: 'ddd' })
 
-const arg = ["--foo", "--bar", "baz", "-mt", "-", "hello", "world", "-myiiup"]
+const arg = ["images", "-v", "--help"]
 console.time("parser")
 const r = pp.parse(arg)
 console.timeEnd("parser")
 console.log(r)
 
-const mri = require('mri');
 
-console.time("mri")
-const mr = mri(arg)
-console.timeEnd("mri")
-
-
-// p.info()
-// p.printError()
-// p.usage()
+// const mri = require('mri');
+// console.time("mri")
+// const mr = mri(arg)
+// console.timeEnd("mri")

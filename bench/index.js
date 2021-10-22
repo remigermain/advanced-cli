@@ -22,26 +22,31 @@ console.timeEnd('mri');
 
 console.time('advparser');
 const ArgParser = require('../dist/index');
-const par = new ArgParser()
-par.addArgument({sFlag: 'b'})
-par.addArgument({mFlag: 'bool'})
-par.addArgument({mFlag: 'no-meep'})
-par.addArgument({mFlag: 'multi=baz'})
 console.timeEnd('advparser');
+
 
 
 console.log('\nBenchmark:');
 const bench = new Suite();
 const args = ['-b', '--bool', '--no-meep', '--multi=baz'];
-/*
+
+
+let i = 0
+let s = 0
+function gg(args) {
+	const par = new ArgParser()
+	par.addArgument('bb', { alias: 'b' })
+	par.addArgument('bool')
+	par.addArgument('no-meep')
+	par.addArgument('multi=baz')
+	return par.parse(args)
+}
 bench
-	.add('minimist     ', () => minimist(args))
-	.add('mri (1.1.1)  ', () => previous(args))
-	.add('mri          ', () => mri(args))
-	.add('nopt         ', () => nopt(args))
-	.add('yargs-parser ', () => yargs(args))
-	.add('advparser ', () => par.parse(args))
+	// .add('minimist     ', () => minimist(args))
+	// .add('mri (1.1.1)  ', () => previous(args))
+	// .add('mri          ', () => mri(args))
+	// .add('nopt         ', () => nopt(args))
+	// .add('yargs-parser ', () => yargs(args))
+	.add('advparser ', () => gg(args))
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
-
-*/

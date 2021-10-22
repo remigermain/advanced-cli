@@ -1,1 +1,436 @@
-!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e(require("cli-color")):"function"==typeof define&&define.amd?define(["cli-color"],e):(t="undefined"!=typeof globalThis?globalThis:t||self).index=e(t.clc)}(this,(function(t){"use strict";function e(t){return t&&"object"==typeof t&&"default"in t?t:{default:t}}var s=e(t);const r={sFlag:"h",mFlag:"help",description:"print help",call:({parser:t})=>(t.usage(),!0)},n={sFlag:"v",mFlag:"version",description:"display version",call({options:t}){console.info(t.version)}},a=(t,e)=>s=>s.sFlag?s.sFlag===e:s.mFlag===t;return class{constructor(t={}){this.arguments=[],this.commands=[],this.argv=[],this.errors=[],this.final={},this.anyArgs=[],this.options=t,this.addArgument(Object.assign({},r)),this.options.version&&this.addArgument(Object.assign({},n))}checkArguments(t,e=null){const s={};t.forEach(((t,r)=>{var n;const a=t.sFlag||t.mFlag;if(a in s)throw new Error(`duplicate options '${a}' ${e?`from '${e.name}' command`:""}`);if(!t.sFlag&&!t.mFlag)throw new Error("sFlag or mFlag need to be set");if((null===(n=t.sFlag)||void 0===n?void 0:n.length)>1)throw new Error("sFlag need to be only one char");s[a]=!0}))}addArgument(t){this.arguments.push(t),this.checkArguments(this.arguments)}addCommand(t){var e;if(this.commands.filter((e=>e.name===t.name)).length>0)throw new Error(`Command '${t.name}' already set`);(null===(e=t.arguments)||void 0===e?void 0:e.length)&&this.checkArguments(t.arguments,t),this.commands.push(t)}convertType(t,e){if(t===Number){const t=Number(e);if(Number.isNaN(t))throw new Error("nedd valid number.");return t}if(t!==Boolean)return e;switch(e){case"true":case"yes":return!0;case"false":case"no":return!1;default:throw new Error("boolean type, choise are 'true' or 'false'")}}parseFlag(t,e,s){const r={_declare:e};if(e.sFlag&&(this.final[e.sFlag]=r),e.mFlag&&(this.final[e.mFlag]=r),!e.params||!e.params.length)return s+1;r.params=[];let n=0;for(;n<e.params.length;n++){const a=e.params[n];if(this.argv.length<=n+s+1){if(!("default"in a)){this.errors.push({text:e.description||`need ${e.params.length} arguments after flag "${t}".`,idxArgv:s});break}r.params[n]=a.default}else{const e=this.argv[s+n+1];try{if(a.validator){const t=a.validator(e);r.params[n]=t}else this.convertType(a.type,e)}catch(e){this.errors.push({text:`invalid arugments for flag "${t}", ${e.toString()}`,idxArgv:s+n+1});break}}}return s+n}_parseOption(t,e=0){let r=!1;const n=this.options.stopFlags||null;for(;e<this.argv.length;){const a=this.argv[e];if(a!==n)if(r||"-"!=a[0])this.anyArgs.push(a),e++;else{if("-"==a[1]){const r=a.substr(2),n=t.filter((t=>t.mFlag===r))[0];n?e=this.parseFlag(r,n,e):this.errors.push({text:`Found argument '${s.default.yellow(`--${r}`)}' which wasn't expected, or isn't valid in this context`,idxArgv:e})}else{if(1==a.length){this.errors.push({text:`Empty argument '${s.default.yellow("-")}' which wasn't expected.`,idxArgv:e}),e++;continue}let r=e;for(let n=1;n<a.length;n++){const o=a[n],i=t.filter((t=>t.sFlag==o))[0];i?r=this.parseFlag(o,i,r):this.errors.push({text:`Found argument '${s.default.yellow(`-${o}`)}' which wasn't expected, or isn't valid in this context.`,idxArgv:e,start:n,end:1})}e=r}e++}else r=!0,e++}return 0==this.errors.length}checkArgumentsCall(){const t=Object.keys(this.final);for(let e=0;e<t.length;e++){const s=this.final[t[e]];if(s._declare.call)return s._declare.call}return null}context(){return{flags:this.final,arguments:this.anyArgs,options:this.options,parser:this}}parseOptions(){if(!this._parseOption(this.arguments))return!1;const t=this.checkArgumentsCall();return t&&t(this.context()),!0}parseCommand(){if(0==this.argv.length)return this.usage(),!1;const t=this.argv[0],e=this.commands.filter((e=>e.name===t))[0];if(!e)return this.errors.push({text:`no such subcommand: '${s.default.yellow(t)}''`,idxArgv:0}),!1;e.arguments&&e.arguments.length||(e.arguments=[]);const n=[...e.arguments||[]];this.arguments.forEach((t=>{n.filter(a(t.mFlag,t.sFlag))[0]||n.push(t)}));if(!e.arguments.filter(a("help","h"))[0]){const t=Object.assign({},r);t.call=({parser:t,cmd:e})=>{t.commandUsage(e)},e.arguments.push(t)}if(!this._parseOption(n,1))return!1;const o=this.context();o.cmd=e;const i=this.checkArgumentsCall();return i?i(o):e.call(o),!0}parse(t){let e;return this.argv=t,e=this.commands.length>0?this.parseCommand():this.parseOptions(),e||this.printError(),e}printError(){const t=this.argv.join(" ")+"\n";let e=this.errors;this.options.maxError&&(e=[...this.errors].splice(0,this.options.maxError));let r="";e.forEach((e=>{r+=`${s.default.red(s.default.bold("error"))}: ${e.text}\n`,r+=t;let n=e.idxArgv;for(let t=0;t<e.idxArgv;t++)n+=this.argv[t].length;const a=this.argv[e.idxArgv].length;let o;if(null!=e.start&&null!=e.end){o=s.default.red("~".repeat(e.start))+s.default.red(s.default.bold("^".repeat(e.end)));const t=a-(e.start+e.end);t>0&&(o+=s.default.red("~".repeat(t)))}else o=s.default.red(s.default.bold("^".repeat(a)));r+=`${" ".repeat(n)}${o}\n`})),r+=`total errors: ${s.default.red(s.default.bold(this.errors.length))}`,console.error(r)}formatOptions(t,e="Options:"){const s={},r=t.reduce(((t,e)=>{var r;return e.mFlag?(s[e.mFlag]=e.mFlag.length,e.params&&(s[e.mFlag]+=(null===(r=e.params)||void 0===r?void 0:r.reduce(((t,e)=>t+e.type.constructor.name.length),0))+1),Math.max(t,s[e.mFlag])):t}),0),n=[e];return t.reduce(((t,e)=>{let n=e.sFlag?` -${e.sFlag}`:"   ";return n+=e.sFlag&&e.mFlag?", ":"  ",e.mFlag&&(n+=`--${e.mFlag} `,e.params&&(n+=e.params.reduce(((t,e)=>`${t}${e.type.constructor.name} `),""))),n+=" ".repeat((e.mFlag?r-s[e.mFlag]:r+3)+1),t.push(`${n}${e.description||"no information."}`),t}),n)}formatSubCommands(t){const e=t.reduce(((t,e)=>Math.max(t,e.name.length)),0);return t.reduce(((t,s)=>(t.push(`  ${s.name} ${" ".repeat(e-s.name.length+2)}${s.description}`),t)),["Management Commands:"])}commandUsage(t){var e;let s="";s+=`Usage: ${(null===(e=this.options)||void 0===e?void 0:e.name)||""} ${t.name} `,this.options.progStatus?s+=this.options.progStatus:s+="[OPTIONS]\n\n",s+=t.description,this.arguments&&(s+="\n\n"+this.formatOptions(this.arguments,"Global options:").join("\n")),t.arguments&&(s+="\n\n"+this.formatOptions(t.arguments,"Command options:").join("\n")),this.options.footer&&(s+=`\n\n${this.options.footer}`),console.log(s)}usage(){var t;let e="";e+=`Usage: ${(null===(t=this.options)||void 0===t?void 0:t.name)||""} `,this.options.progStatus?e+=this.options.progStatus:e+=`[OPTIONS] ${this.commands.length>0?"COMMAND":""}\n\n`,this.options.description&&(e+=this.options.description),this.arguments.length&&(e+="\n\n"+this.formatOptions(this.arguments).join("\n")),this.commands.length&&(e+="\n\n"+this.formatSubCommands(this.commands).join("\n")),this.options.footer&&(e+=`\n\n${this.options.footer}`),console.log(e)}}}));
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('colorette')) :
+    typeof define === 'function' && define.amd ? define(['colorette'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.index = factory(global.clc));
+})(this, (function (clc) { 'use strict';
+
+    function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+    var clc__default = /*#__PURE__*/_interopDefaultLegacy(clc);
+
+    class CliParser {
+        constructor(name, description, options = {}) {
+            this.name = name;
+            this.description = description;
+            this.options = options;
+            this.commands = {};
+            this.arguments = {};
+            this.argumentsAlias = {};
+            this.argv = [];
+            this.errors = [];
+            this._ctx = null;
+            this.addArgument('help', {
+                alias: 'h',
+                description: 'Prints help information',
+                call({ parser }) {
+                    parser.usage();
+                }
+            });
+            if (options.version) {
+                this.addArgument('version', {
+                    alias: 'v',
+                    description: 'Print version info and exit',
+                    call({ options, name, description }) {
+                        console.info(`${name} ${options.version}`);
+                    }
+                });
+            }
+        }
+        checkAlias(alias, suffix = "") {
+            if (alias !== undefined) {
+                if (alias.length != 1) {
+                    throw new Error(`alias options '${alias}' need to be only one char ${suffix}`);
+                }
+                if (alias in this.argumentsAlias) {
+                    throw new Error(`duplicate alias options '${alias} ${suffix}`);
+                }
+            }
+        }
+        addArgument(name, arg = {}) {
+            if (name in this.arguments) {
+                throw new Error(`duplicate options '${name}'`);
+            }
+            if (arg.alias) {
+                this.checkAlias(arg.alias);
+            }
+            // TODO check command alerady exist
+            this.arguments[name] = arg;
+            if (arg.alias) {
+                this.argumentsAlias[arg.alias] = true;
+            }
+        }
+        addCommand(name, cmd) {
+            if (name in this.commands) {
+                throw new Error(`Command '${name}' already set`);
+            }
+            if (cmd.arguments === undefined) {
+                cmd.arguments = {};
+            }
+            const alias = {};
+            Object.keys(cmd.arguments).forEach(key => {
+                //@ts-ignore
+                const opt = cmd.arguments[key];
+                if (opt.alias) {
+                    this.checkAlias(opt.alias, `from command '${name}'`);
+                    alias[opt.alias] = true;
+                }
+            });
+            cmd.name = name;
+            this.commands[name] = cmd;
+        }
+        convertType(type, value) {
+            if (type === Number) {
+                const n = Number(value);
+                if (Number.isNaN(n)) {
+                    throw new Error("nedd valid number.");
+                }
+                return n;
+            }
+            else if (type === Boolean) {
+                switch (value) {
+                    case "true":
+                    case "yes":
+                        return true;
+                    case "false":
+                    case "no":
+                        return false;
+                    default:
+                        throw new Error("boolean type, choise are 'true' or 'false'");
+                }
+            }
+            else {
+                return value;
+            }
+        }
+        advFlag(argv, index, choices, cliArgs, name) {
+            const info = { params: [] };
+            const arg = choices[name];
+            cliArgs[name] = info;
+            if (arg.alias) {
+                cliArgs[arg.alias] = info;
+            }
+            if (!arg.params || !arg.params.length) {
+                return index + 1;
+            }
+            let i = 0;
+            for (; i < arg.params.length; i++) {
+                const param = arg.params[i];
+                if ((index + i) >= argv.length) {
+                    if ("default" in param) {
+                        info.params.push(param.default);
+                    }
+                    else {
+                        this.errors.push({
+                            text: `need ${clc__default["default"].yellow(arg.params.length)} arguments after flag '${name}'.`,
+                            argvi: index + i
+                        });
+                        break;
+                    }
+                }
+                else {
+                    const value = argv[index + i];
+                    try {
+                        if (param.validator) {
+                            info.params.push(param.validator(value));
+                        }
+                        else {
+                            this.convertType(param.type, value);
+                        }
+                    }
+                    catch (e) {
+                        this.errors.push({ text: `invalid arugments for flag "${name}", ${e.toString()}`, argvi: index + i });
+                        break;
+                    }
+                }
+            }
+            return index + i;
+        }
+        parseFlags(argv, choices, start = 0) {
+            const flags = {};
+            const anyArgs = [];
+            let stop = false;
+            const keys = Object.keys(choices);
+            while (start < argv.length) {
+                const val = argv[start];
+                if (!stop && val === this.options.stopFlags) {
+                    stop = true;
+                    start++;
+                }
+                else if (stop || val[0] != '-') {
+                    anyArgs.push(val);
+                    start++;
+                }
+                else if (val[1] == '-') {
+                    if (val.length == 2) {
+                        this.errors.push({
+                            text: `Empty argument '${clc__default["default"].yellow('--')}' which wasn't expected.`,
+                            argvi: start++,
+                            start: 2,
+                            end: val.length - 2
+                        });
+                        continue;
+                    }
+                    const name = val.substring(2);
+                    if (!(name in choices)) {
+                        this.errors.push({
+                            text: `Found argument '${clc__default["default"].yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
+                            argvi: start++,
+                            start: 2,
+                            end: val.length - 2
+                        });
+                        continue;
+                    }
+                    start = this.advFlag(argv, start, choices, flags, name);
+                }
+                else if (val.length != 1) {
+                    // simple
+                    let memStart = start;
+                    for (let i = 1; i <= val.length - 1; i++) {
+                        const name = keys.find(k => choices[k].alias === val[i]);
+                        if (!name) {
+                            this.errors.push({
+                                text: `Found argument '${clc__default["default"].yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
+                                argvi: start,
+                                start: i,
+                                end: 1
+                            });
+                            continue;
+                        }
+                        memStart = this.advFlag(argv, memStart, choices, flags, name);
+                    }
+                    start += (memStart === start ? 1 : memStart);
+                }
+                else {
+                    this.errors.push({
+                        text: `Empty argument '${clc__default["default"].yellow('-')}' which wasn't expected.`,
+                        argvi: start++
+                    });
+                }
+            }
+            return [flags, anyArgs];
+        }
+        parseCommand(argv) {
+            var _a;
+            const name = argv[0];
+            if (name in this.commands) {
+                const cmd = this.commands[name];
+                // merge global options with cmd options
+                const args = Object.assign(Object.assign({}, this.arguments), cmd.arguments);
+                // change usage function to command usage
+                if ("help" in args) {
+                    args.help.call = ({ parser, cmd }) => {
+                        if (cmd) {
+                            parser.commandUsage(cmd);
+                        }
+                    };
+                }
+                //parse options
+                const [flags, anyArgs] = this.parseFlags(argv, args, 1);
+                if (!this.errors.length) {
+                    const callFalg = this._getCallFlag(flags);
+                    if (callFalg) {
+                        callFalg(this._createContext(flags, anyArgs, cmd));
+                    }
+                    else if (cmd.call) {
+                        cmd.call(this._createContext(flags, anyArgs, cmd));
+                    }
+                }
+            }
+            else if (name[0] == '-') {
+                this.errors.push({ text: `${(_a = this.name) !== null && _a !== void 0 ? _a : 'programme'} need to start with command` });
+            }
+            else {
+                this.errors.push({ text: `no such subcommand: '${clc__default["default"].yellow(name)}''`, argvi: 0 });
+            }
+        }
+        parseArguments(argv) {
+            //parse options
+            const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0);
+            if (!this.errors.length) {
+                const call = this._getCallFlag(flags);
+                if (call) {
+                    call(this._createContext(flags, anyArgs));
+                }
+            }
+        }
+        parse(argv) {
+            if (argv.length == 0) {
+                this.usage();
+            }
+            else if (Object.keys(this.commands).length) {
+                this.parseCommand(argv);
+            }
+            else {
+                this.parseArguments(argv);
+            }
+            if (this.errors.length) {
+                this.printError(argv);
+                return false;
+            }
+            return true;
+        }
+        _getCallFlag(flags) {
+            const keys = Object.keys(flags);
+            for (let i = 0; i < keys.length; i++) {
+                const fl = flags[keys[i]];
+                if (fl.call) {
+                    return fl.call;
+                }
+            }
+            return null;
+        }
+        get context() {
+            if (!this._ctx) {
+                throw new Error("You need to call 'parse' before access context");
+            }
+            return this._ctx;
+        }
+        _createContext(flags, anyArgs, cmd = null) {
+            const ctx = {
+                flags,
+                anyArgs,
+                parser: this,
+                name: this.name,
+                description: this.description,
+                options: this.options
+            };
+            if (cmd) {
+                ctx.cmd = cmd;
+            }
+            this._ctx = ctx;
+            return ctx;
+        }
+        //--------------
+        // utils
+        //--------------
+        // format
+        printError(argv) {
+            const argvLine = argv.join(' ') + "\n";
+            let errors = this.errors;
+            if (this.options.maxError) {
+                errors = [...this.errors].splice(0, this.options.maxError);
+            }
+            let str = "";
+            errors.forEach(err => {
+                str += `${clc__default["default"].red(clc__default["default"].bold('error'))}: ${err.text}\n`;
+                if (err.argvi !== undefined) {
+                    // calcul padding spaces
+                    str += argvLine;
+                    let spaces = err.argvi;
+                    for (let i = 0; i < err.argvi; i++) {
+                        spaces += argv[i].length;
+                    }
+                    // generate arrow
+                    const len = argv[err.argvi].length;
+                    let tild;
+                    if (err.start != undefined && err.end != undefined) {
+                        tild = clc__default["default"].red("~".repeat(err.start)) + clc__default["default"].red(clc__default["default"].bold("^".repeat(err.end)));
+                        const fin = len - (err.start + err.end);
+                        if (fin > 0) {
+                            tild += clc__default["default"].red("~".repeat(fin));
+                        }
+                    }
+                    else {
+                        tild = clc__default["default"].red(clc__default["default"].bold("^".repeat(len)));
+                    }
+                    str += `${" ".repeat(spaces)}${tild}\n`;
+                }
+            });
+            if (this.errors.length >= 5) {
+                str += `total errors: ${clc__default["default"].red(clc__default["default"].bold(this.errors.length))}`;
+            }
+            console.error(str);
+        }
+        // formating
+        formatOptions(options, prefix = "Options:") {
+            const keys = Object.keys(options);
+            // calcul padding space
+            const mem = {};
+            const padding = keys.reduce((num, key) => {
+                const opt = options[key];
+                mem[key] = key.length;
+                if (opt.params && opt.params.length) {
+                    mem[key] += opt.params.reduce((c, p) => c + p.type.constructor.name.length, 0);
+                }
+                return Math.max(num, mem[key]);
+            }, 0);
+            let str = prefix + '\n';
+            keys.forEach(key => {
+                var _a;
+                const opt = options[key];
+                str += (opt.alias ? `-${opt.alias}, ` : '    ');
+                str += `--${key} `;
+                if (opt.params) {
+                    str += opt.params.reduce((s, p) => `${s}${p.type.constructor.name} `, "");
+                }
+                // space padding 
+                str += " ".repeat(padding - mem[key] + 1);
+                str += (_a = opt.description) !== null && _a !== void 0 ? _a : clc__default["default"].italic("no information.");
+            });
+            return str;
+        }
+        formatCommands(cmds) {
+            const keys = Object.keys(cmds);
+            const padding = keys.reduce((c, key) => Math.max(c, key.length), 0);
+            let str = "";
+            keys.forEach(key => {
+                str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`;
+            });
+            return str;
+        }
+        commandUsage(cmd) {
+            if (typeof cmd === "string") {
+                const tcmd = this.commands[cmd];
+                if (tcmd === undefined) {
+                    throw new Error(`'${cmd}' not found in commands`);
+                }
+                cmd = tcmd;
+            }
+            let str = "";
+            str += `Usage: ${this.name} ${cmd.name} `;
+            if (this.options.info) {
+                str += this.options.info;
+            }
+            else {
+                str += `[OPTIONS]\n\n`;
+            }
+            str += cmd.description;
+            if (this.arguments) {
+                str += '\n\n' + this.formatOptions(this.arguments, "Global options:");
+            }
+            if (cmd.arguments) {
+                str += '\n\n' + this.formatOptions(cmd.arguments, "Command options:");
+            }
+            if (this.options.footer) {
+                str += `\n\n${this.options.footer}`;
+            }
+            console.log(str);
+        }
+        usage() {
+            let str = "";
+            const haveCommand = Object.keys(this.commands).length > 0;
+            const haveArguments = Object.keys(this.arguments).length > 0;
+            str += `Usage: ${this.name} `;
+            if (this.options.info) {
+                str += this.options.info;
+            }
+            else {
+                str += `[OPTIONS] ${haveCommand ? "COMMAND" : ""}\n\n`;
+            }
+            str += this.description;
+            if (haveArguments) {
+                str += '\n\n' + this.formatOptions(this.arguments);
+            }
+            if (haveCommand) {
+                str += '\n\n' + this.formatCommands(this.commands);
+            }
+            if (this.options.footer) {
+                str += `\n\n${this.options.footer}`;
+            }
+            console.log(str);
+        }
+    }
+
+    return CliParser;
+
+}));

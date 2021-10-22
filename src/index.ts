@@ -1,157 +1,135 @@
-import clc from 'cli-color'
-
-type stopParseChoices = "--" | ";" | null
+import clc from 'colorette'
 
 interface CliParserOptions {
-    name?: string,
-    description?: string,
     info?: string,
     footer?: string,
     version?: string,
-    maxError?: number
-    stopFlags?: stopParseChoices
+    maxError?: number,
+    stopFlags?: "--" | ";" | null,
 }
 
-interface ArgParams {
+interface CliError {
+    text: string,
+    argvi?: number,
+    start?: number,
+    end?: number,
+}
+interface CliContext {
+    cmd?: Command,
+    flags: CliArguments,
+    anyArgs: string[],
+    parser: CliParser,
+    name: string,
+    description: string,
+    options: CliParserOptions
+}
+
+interface CliArgParams {
     type: Object | Number | Boolean
     default?: string | number | boolean,
     validator?: (value: string) => any,
 }
 
-interface Arg {
-    mFlag?: string,
-    sFlag?: string,
-    description: string,
-    params?: ArgParams[],
-    call?: (ctx: CliParserContext) => void
+interface CliArg {
+    alias?: string,
+    description?: string,
+    params?: CliArgParams[],
+    call?: (ctx: CliContext) => void
 }
+
+interface CliArguments {
+    [key:string]: CliArg
+}
+
 
 interface Command {
     name: string,
     description: string,
-    arguments?: Arg[],
-    call: (ctx: CliParserContext) => void
+    arguments?: CliArguments,
+    call: (ctx: CliContext) => void
 }
-
-interface infoFlag {
-    _declare: Arg,
-    params?: any[]
-}
-
-
-const helpFlag: Arg = {
-    sFlag: "h",
-    mFlag: "help",
-    description: "print help",
-    call ({parser}) {
-        parser.usage()
-        return true
-    }
-}
-
-const versionFlag: Arg = {
-    sFlag: "v",
-    mFlag: "version",
-    description: "display version",
-    call ({options}) {
-        console.info(options.version)
-    }
-}
-
-interface CliParserContext {
-    flags:  {[key: string]: infoFlag},
-    arguments: string[],
-    options: CliParserOptions,
-    parser: CliParser,
-    cmd?: Command,
-}
-
-const findOptions = (mfl: string | undefined, sfl: string | undefined) => (opt: Arg) => {
-    if (opt.sFlag) {
-        return opt.sFlag === sfl
-    }
-    return opt.mFlag === mfl
-}
-
-
-interface ErrorCliParser {
-    text: string,
-    idxArgv: number,
-    start?: number,
-    end?: number,
-}
-
-const g: ArgParams = {
-    type: Object
+interface CliCommand {
+    [key:string]: Command
 }
 
 class CliParser {
 
-    protected options : CliParserOptions
-    protected arguments : Arg[] = []
-    protected commands: Command[] = []
+    protected commands: CliCommand = {}
+    protected arguments: CliArguments = {}
+    protected argumentsAlias: {[key:string]: true} = {}
     
     protected argv: string[] = []
     
-    protected errors : ErrorCliParser[] = []
+    protected errors: CliError[] = []
+
+    protected _ctx: CliContext | null = null
+
     
-    protected final: {[key: string]: infoFlag} = {}
-    protected anyArgs: string[] = []
-
-
-    constructor (options: CliParserOptions = {}) {
-
-        this.options = options
-
-        // add default help
-        this.addArgument({...helpFlag})
-        if (this.options.version) {
-            this.addArgument({...versionFlag})
-        }
-    }
-
-    protected checkArguments(args: Arg[], cmd: Command | null = null) {
-        const duplicate: {[key:string]: boolean} = {}
-
-        args.forEach((a, idx) => {
-            const key = a.sFlag || a.mFlag
-
-            // @ts-ignore
-            if (key in duplicate) {
-                throw new Error(`duplicate options '${key}' ${cmd? `from '${cmd.name}' command` : ""}`)
+    constructor(public name: string, public description: string, public options: CliParserOptions = {}) {
+        this.addArgument('help', {
+            alias: 'h',
+            description: 'Prints help information',
+            call({ parser }) {
+                parser.usage()                
             }
-            if (!a.sFlag && !a.mFlag) {
-                throw new Error("sFlag or mFlag need to be set")
-            }
-            // @ts-ignore
-            if (a.sFlag?.length > 1) {
-                throw new Error("sFlag need to be only one char")
-            }
-
-            // @ts-ignore
-            duplicate[key] = true
         })
-    }
-    
-    addArgument(arg: Arg) {
-        // check command alerady exist
-        this.arguments.push(arg)
-        this.checkArguments(this.arguments)
 
-    }
-
-    addCommand(cmd: Command) {
-        // check command alerady exist
-        const f = this.commands.filter(s => s.name === cmd.name)
-        if (f.length > 0) {
-            throw new Error(`Command '${cmd.name}' already set`)
+        if (options.version) {
+            this.addArgument('version', {
+                alias: 'v',
+                description: 'Print version info and exit',
+                call({ options, name, description }) {
+                    console.info(`${name} ${options.version}`)
+                }
+            })
         }
+    }
 
-        if (cmd.arguments?.length) {
-            this.checkArguments(cmd.arguments, cmd)
+    protected checkAlias(alias: string | undefined, suffix: string = "") {
+        if (alias !== undefined) {
+            if (alias.length != 1) {
+                throw new Error(`alias options '${alias}' need to be only one char ${suffix}`)
+            }
+            if (alias in this.argumentsAlias) {
+                throw new Error(`duplicate alias options '${alias} ${suffix}`)
+            }
         }
+    }
 
-        this.commands.push(cmd)
+    addArgument(name: string, arg: CliArg = {}) {
+        
+        if (name in this.arguments) {
+            throw new Error(`duplicate options '${name}'`)
+        }
+        if (arg.alias) {
+            this.checkAlias(arg.alias)
+        }
+        // TODO check command alerady exist
+        this.arguments[name] = arg
+        if (arg.alias) {
+            this.argumentsAlias[arg.alias] = true
+        }
+    }
+
+    addCommand(name: string, cmd: Command) {
+
+        if (name in this.commands) {
+            throw new Error(`Command '${name}' already set`)
+        }
+        if (cmd.arguments === undefined) {
+            cmd.arguments = {}
+        }
+        const alias: {[key:string]: boolean} = {}
+        Object.keys(cmd.arguments).forEach(key => {
+            //@ts-ignore
+            const opt = cmd.arguments[key]
+            if (opt.alias) {
+                this.checkAlias(opt.alias, `from command '${name}'`)
+                alias[opt.alias] = true
+            }
+        })
+        cmd.name = name
+        this.commands[name] = cmd
     }
 
     protected convertType(type: any, value: string): string | boolean | number {
@@ -178,240 +156,231 @@ class CliParser {
         }
     }
 
-    protected parseFlag(acutal: string, flag: Arg, index: number): number {
+    advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliArguments, name: string): number {
+        const info = {params: [] as any[]}
+        const arg: CliArg = choices[name]
 
-        const info: infoFlag = {_declare: flag}
-        if (flag.sFlag) {
-            // @ts-ignore
-            this.final[flag.sFlag] = info
-        }
-        if (flag.mFlag) {
-            // @ts-ignore
-            this.final[flag.mFlag] = info
+        cliArgs[name] = info
+        if (arg.alias) {
+            cliArgs[arg.alias] = info
         }
 
-        // parse sub arguments
-        if (!flag.params || !flag.params.length) {
+        if (!arg.params || !arg.params.length) {
             return index + 1
         }
-
-        info.params = []
+        
         let i = 0
-        for (;i < flag.params.length; i++) {
-            const param = flag.params[i]
-
-            if (this.argv.length <= (i + index + 1)) {
+        for (;i < arg.params.length; i++) {
+            const param = arg.params[i]
+            if ((index + i) >= argv.length) {
                 if ("default" in param) {
-                    info.params[i] = param.default
+                    info.params.push(param.default)
                 } else {
                     this.errors.push({
-                        text: flag.description || `need ${flag.params.length} arguments after flag "${acutal}".`,
-                        idxArgv: index
+                        text: `need ${clc.yellow(arg.params.length)} arguments after flag '${name}'.`,
+                        argvi: index + i
                     })
-                    break ;
+                    break
                 }
             } else {
-                const value = this.argv[index + i + 1]
+                
+                const value = argv[index + i]
+
                 try {
                     if (param.validator) {
-                        const v = param.validator(value)
-                        info.params[i] = v
+                        info.params.push(param.validator(value))
                     } else {
                         this.convertType(param.type, value)
                     }
-                } catch(e) {
-                    //@ts-ignore
-                    this.errors.push({ text: `invalid arugments for flag "${acutal}", ${e.toString()}`, idxArgv: index + i + 1 })
-                    break;
+                } catch(e: any) {
+                    this.errors.push({ text: `invalid arugments for flag "${name}", ${e.toString()}`, argvi: index + i })
+                    break
                 }
+
             }
         }
         return index + i
     }
 
-    protected _parseOption(args: Arg[], i: number =0): boolean {
+    parseFlags(argv: string[], choices: CliArguments, start: number = 0): [CliArguments, string[]] {
+        const flags: CliArguments = {}
+        const anyArgs: string[] = []
+        let stop = false
 
-        let stopParse = false
-        const stopStr = this.options.stopFlags || null
+        const keys = Object.keys(choices)
 
-        while (i < this.argv.length) {
-            const el = this.argv[i]
+        while (start < argv.length) {
+            const val = argv[start]
 
-            if (el === stopStr) {
-                stopParse = true
-                i++
-                continue
+            if (!stop && val === this.options.stopFlags) {
+                stop = true
+                start++
+            } else if (stop || val[0] != '-') {
+                anyArgs.push(val)
+                start++
             }
-            
-            if (stopParse || el[0] != "-") {
-                this.anyArgs.push(el)
-                i++
-                continue
-            }
-            // parse multi flag (start with --)
-            if (el[1] == "-")
-            {
-                const flag = el.substr(2)
-
-                const mf = args.filter(e => e.mFlag === flag)[0]
-                if (!mf) {
+            else if (val[1] == '-') {
+                if (val.length == 2) {
                     this.errors.push({
-                        text: `Found argument '${clc.yellow(`--${flag}`)}' which wasn't expected, or isn't valid in this context`,
-                        idxArgv: i
+                        text: `Empty argument '${clc.yellow('--')}' which wasn't expected.`,
+                        argvi: start++,
+                        start: 2,
+                        end: val.length - 2
                     })
-                } else {
-                    i  = this.parseFlag(flag, mf, i)
-                }
-            
-            } else {
-                // parse simple flag (start with -)
-                if (el.length == 1) {
-                    this.errors.push({
-                        text: `Empty argument '${clc.yellow('-')}' which wasn't expected.`,
-                        idxArgv: i,
-                    })
-                    i++
                     continue
                 }
-                let inde = i
-                for(let j = 1; j < el.length; j++) {
-
-                    const fl = el[j]
-                    const sf = args.filter(e => e.sFlag == fl)[0]
-
-                    if (!sf)
+                const name = val.substring(2)
+                if (!(name in choices)) {
+                    this.errors.push({
+                        text: `Found argument '${clc.yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
+                        argvi: start++,
+                        start: 2,
+                        end: val.length - 2
+                    })
+                    continue
+                }
+                start = this.advFlag(argv, start, choices, flags, name)
+            }
+            else if (val.length != 1) {
+                // simple
+                let memStart = start
+                for (let i = 1; i <= val.length - 1; i++) {
+                    
+                    const name = keys.find(k => choices[k].alias === val[i])
+                    if (!name) {
                         this.errors.push({
-                            text: `Found argument '${clc.yellow(`-${fl}`)}' which wasn't expected, or isn't valid in this context.`,
-                            idxArgv: i,
-                            start: j,
+                            text: `Found argument '${clc.yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
+                            argvi: start,
+                            start: i,
                             end: 1
                         })
-                    else {
-                        inde = this.parseFlag(fl, sf, inde)
+                        continue
                     }
+                    memStart = this.advFlag(argv, memStart, choices, flags, name)
                 }
-                i = inde
+                start += (memStart === start ? 1 : memStart)
+
+            } else {
+                this.errors.push({
+                    text: `Empty argument '${clc.yellow('-')}' which wasn't expected.`,
+                    argvi: start++
+                })
             }
-            i++
         }
-        return this.errors.length == 0
+
+        return [flags, anyArgs]
     }
 
-    protected checkArgumentsCall(): Function | null {
-        const keys = Object.keys(this.final)
+    parseCommand(argv: string[]) {
+        const name = argv[0]
+
+        if (name in this.commands) {
+            const cmd = this.commands[name]
         
-        for (let i = 0; i < keys.length; i++) {
-            const obj: infoFlag = this.final[keys[i]]
-            if (obj._declare.call) {
-                return obj._declare.call
+            // merge global options with cmd options
+            const args = {...this.arguments, ...cmd.arguments}
+
+            // change usage function to command usage
+            if ("help" in args) {
+                args.help.call = ({ parser, cmd }) => {
+                    if (cmd) {
+                        parser.commandUsage(cmd)
+                    }
+                }
+            }
+            //parse options
+            const [flags, anyArgs] = this.parseFlags(argv, args, 1)
+
+            if (!this.errors.length) {
+                const callFalg = this._getCallFlag(flags)        
+                if (callFalg) {
+                    callFalg(this._createContext(flags, anyArgs, cmd))
+                }
+                else if (cmd.call) {
+                    cmd.call(this._createContext(flags, anyArgs, cmd))
+                }
             }
         }
+        else if (name[0] == '-') {
+            this.errors.push({ text: `${this.name ?? 'programme'} need to start with command`})
+        } else {
+            this.errors.push({ text: `no such subcommand: '${clc.yellow(name)}''`, argvi: 0})
+        }
+    }
 
+    parseArguments(argv: string[]) {
+        //parse options
+        const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0)
+
+        if (!this.errors.length) {
+            const call = this._getCallFlag(flags)        
+            if (call) {
+                call(this._createContext(flags, anyArgs))
+            }
+        }
+    }
+
+    parse(argv: string[]): boolean {
+        if (argv.length == 0) {
+            this.usage()
+        }
+        else if (Object.keys(this.commands).length) {
+            this.parseCommand(argv)
+        } else {
+            this.parseArguments(argv)
+        }
+
+        if (this.errors.length) {
+            this.printError(argv)
+            return false
+        }
+        return true
+    }
+
+    _getCallFlag(flags: CliArguments): Function | null {
+        const keys = Object.keys(flags)
+        for (let i = 0; i < keys.length; i++) {
+            const fl = flags[keys[i]]
+            if (fl.call) {
+                return fl.call
+            }
+        }
         return null
     }
 
-    protected context(): CliParserContext {
-        // call subcommand function with context
-        return {
-            flags: this.final,
-            arguments: this.anyArgs,
-            options: this.options,
+    get context(): CliContext {
+        if (!this._ctx) {
+            throw new Error("You need to call 'parse' before access context")
+        }
+        return this._ctx
+    }
+
+    _createContext(flags: CliArguments, anyArgs: string[], cmd: Command | null = null): CliContext {
+        const ctx: CliContext = {
+            flags,
+            anyArgs,
             parser: this,
+            name: this.name,
+            description: this.description,
+            options: this.options
         }
+        if (cmd) {
+            ctx.cmd = cmd
+        }
+        this._ctx = ctx
+        return ctx
     }
 
-    protected parseOptions(): boolean {
-        if (!this._parseOption(this.arguments)) {
-            return false
-        }
+    //--------------
+    // utils
+    //--------------
 
-        // TODO check if call
-        const call = this.checkArgumentsCall()
-        if (call) {
-            call(this.context())
-        }
 
-        return true
-    }
+    // format
 
-    protected parseCommand(): boolean {
-        if (this.argv.length == 0) {
-            this.usage()
-            return false
-        }
-
-        const nameCmd = this.argv[0]
-        const cmd = this.commands.filter(s => s.name === nameCmd)[0]
-        if (!cmd) {
-            this.errors.push({text: `no such subcommand: '${clc.yellow(nameCmd)}''`, idxArgv: 0})
-            return false
-        }
-
-        if (!cmd.arguments || !cmd.arguments.length) {
-            cmd.arguments = []
-        }
-        // merge global arguments and command arguments
-        const args: Arg[] = [...(cmd.arguments || [])]
-        this.arguments.forEach(gobalArg => {
-            const exists = args.filter(findOptions(gobalArg.mFlag, gobalArg.sFlag))[0]
-            if (!exists) {
-                args.push(gobalArg)
-            }
-        })
-        // add help function command
-        const help = cmd.arguments.filter(findOptions("help", "h"))[0]
-        if (!help) {
-            const baseHelp = {...helpFlag}
-            baseHelp.call = ({parser, cmd}) => {
-                //@ts-ignore
-                parser.commandUsage(cmd)
-            }
-            cmd.arguments.push(baseHelp)
-        }
-
-        // 1 == remove command params
-        const results = this._parseOption(args, 1)
+    printError(argv: string[]) {
         
-        // error in options
-        if (!results) {
-            return false
-        }
-        
-        // generate context
-        const ctx = this.context()
-        // set command
-        ctx.cmd = cmd
-        
-        
-        const call = this.checkArgumentsCall()
-        if (call) {
-            // @ts-ignore
-            call(ctx)
-        } else {
-            cmd.call(ctx)
-        }
-
-        return true
-    }
-
-    parse(argv:string[]): boolean {
-        this.argv = argv
-        let results: boolean
-
-        if (this.commands.length > 0) {
-            results = this.parseCommand()
-        } else {
-            results = this.parseOptions()
-        }
-        if (!results) {
-            this.printError()
-        }
-        return results
-    }
-
-    printError() {
-        
-        const argvLine = this.argv.join(' ') + "\n"
+        const argvLine = argv.join(' ') + "\n"
 
         let errors = this.errors
         if (this.options.maxError) {
@@ -421,88 +390,99 @@ class CliParser {
         let str = ""
         errors.forEach(err => {
             str += `${clc.red(clc.bold('error'))}: ${err.text}\n`
-            str += argvLine
             
-            // calcul padding spaces
-            let spaces = err.idxArgv
-            for (let i = 0;i < err.idxArgv; i++) {
-                spaces += this.argv[i].length
-            }
-            
-            // generate arrow
-            const len = this.argv[err.idxArgv].length
-            let tild
-            if (err.start != undefined && err.end != undefined) {
-                tild = clc.red("~".repeat(err.start)) + clc.red(clc.bold("^".repeat(err.end)))
-                const fin = len - (err.start + err.end)
-                if (fin > 0) {
-                    tild += clc.red("~".repeat(fin))
-                }
-            } else {
-                tild = clc.red(clc.bold("^".repeat(len)))
-            }
+            if (err.argvi !== undefined) {
 
-            str += `${" ".repeat(spaces)}${tild}\n`
-            
+                // calcul padding spaces
+                str += argvLine
+                let spaces = err.argvi
+                for (let i = 0;i < err.argvi; i++) {
+                    spaces += argv[i].length
+                }
+                
+                // generate arrow
+                const len = argv[err.argvi].length
+                let tild
+                if (err.start != undefined && err.end != undefined) {
+                    tild = clc.red("~".repeat(err.start)) + clc.red(clc.bold("^".repeat(err.end)))
+                    const fin = len - (err.start + err.end)
+                    if (fin > 0) {
+                        tild += clc.red("~".repeat(fin))
+                    }
+                } else {
+                    tild = clc.red(clc.bold("^".repeat(len)))
+                }
+                
+                str += `${" ".repeat(spaces)}${tild}\n`
+            }
         })
-        str += `total errors: ${clc.red(clc.bold(this.errors.length))}`
+        if (this.errors.length >= 5) {
+            str += `total errors: ${clc.red(clc.bold(this.errors.length))}`
+        }
         console.error(str)
     }
 
     // formating
-    protected formatOptions(options: Arg[], prefix: string = "Options:"): string[] {
-        const mflCount: {[key: string]: number} = {}
-        
+    protected formatOptions(options: CliArguments, prefix: string = "Options:"): string {
+
+        const keys = Object.keys(options)
+
         // calcul padding space
-        const paddingMflag = options.reduce((i, opt) => {
-            if (opt.mFlag) {
-                mflCount[opt.mFlag] = opt.mFlag.length
-                if (opt.params) {
 
-                    mflCount[opt.mFlag] += opt.params?.reduce((si, p) => si + p.type.constructor.name.length, 0) + 1
-                }
-                return Math.max(i, mflCount[opt.mFlag])
+        const mem: {[key:string]: number} = {}
+        const padding = keys.reduce((num, key) => {
+            const opt = options[key]
+            
+            mem[key] = key.length
+            if (opt.params && opt.params.length) {
+                mem[key] += opt.params.reduce((c, p) => c + p.type.constructor.name.length, 0)
             }
-            return i
+            return Math.max(num, mem[key])
         }, 0)
-        
-        const arr: string[] = [prefix]
-        return options.reduce((arr, opt) => {
 
-            let str = (opt.sFlag ? ` -${opt.sFlag}` :  "   ")
-            // separator
-            str += ((opt.sFlag && opt.mFlag) ? ", " : "  ")
-            // mflags
-            if (opt.mFlag) {
-                str += `--${opt.mFlag} `
-                if (opt.params) {
-                    str += opt.params.reduce((s, p) => `${s}${p.type.constructor.name} `, "")
-                }
+        let str = prefix + '\n'
+        keys.forEach(key => {
+            const opt = options[key]
+
+            str += (opt.alias ? `-${opt.alias}, ` : '    ')
+            str += `--${key} `
+            if (opt.params) {
+                str += opt.params.reduce((s, p) => `${s}${p.type.constructor.name} `, "")
             }
             // space padding 
-            str += " ".repeat((opt.mFlag ? paddingMflag - mflCount[opt.mFlag]: paddingMflag + 3) + 1)
-            // help
-            arr.push(`${str}${opt.description || "no information."}`)
-            return arr
-        }, arr)
+            str += " ".repeat(padding - mem[key] + 1)
+            str += opt.description ?? clc.italic("no information.")
+        })
+        return str
     }
 
-    protected formatSubCommands(sub: Command[]): string[] {
+    protected formatCommands(cmds: CliCommand): string {
         const arr: string[] = ["Management Commands:"]
 
-        const padding = sub.reduce((c, s) => Math.max(c, s.name.length), 0)
-        return sub.reduce((ar, s) => {
-            // ad paddding (+2 for space beetwen subcommand and description)
-            ar.push(`  ${s.name} ${" ".repeat(padding - s.name.length + 2)}${s.description}`)
-            return ar
-        }, arr)
+        const keys = Object.keys(cmds)
+        const padding = keys.reduce((c, key) => Math.max(c, key.length), 0)
+
+        let str = ""
+        keys.forEach(key => {
+            str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`
+        })
+        
+        return str
     }
 
-    commandUsage(cmd: Command) {
+    commandUsage(cmd: Command | string) {
+
+        if (typeof cmd === "string") {
+            const tcmd = this.commands[cmd]
+            if (tcmd === undefined) {
+                throw new Error(`'${cmd}' not found in commands`)
+            }
+            cmd = tcmd
+        }
 
         let str = ""
 
-        str += `Usage: ${this.options?.name || ""} ${cmd.name} `
+        str += `Usage: ${this.name} ${cmd.name} `
         if (this.options.info) {
             str += this.options.info
         } else {
@@ -510,10 +490,10 @@ class CliParser {
         }
         str += cmd.description
         if (this.arguments) {
-            str += '\n\n' + this.formatOptions(this.arguments, "Global options:").join("\n")
+            str += '\n\n' + this.formatOptions(this.arguments, "Global options:")
         }
         if (cmd.arguments) {
-            str += '\n\n' + this.formatOptions(cmd.arguments, "Command options:").join("\n")
+            str += '\n\n' + this.formatOptions(cmd.arguments, "Command options:")
         }
         if (this.options.footer) {
             str += `\n\n${this.options.footer}`
@@ -525,20 +505,21 @@ class CliParser {
     usage() {
         let str = ""
 
-        str += `Usage: ${this.options?.name || ""} `
+        const haveCommand = Object.keys(this.commands).length > 0
+        const haveArguments = Object.keys(this.arguments).length > 0
+
+        str += `Usage: ${this.name} `
         if (this.options.info) {
             str += this.options.info
         } else {
-            str += `[OPTIONS] ${this.commands.length > 0 ? "COMMAND" : ""}\n\n`
+            str += `[OPTIONS] ${haveCommand? "COMMAND" : ""}\n\n`
         }
-        if (this.options.description) {
-            str += this.options.description
+        str += this.description
+        if (haveArguments) {
+            str += '\n\n' + this.formatOptions(this.arguments)
         }
-        if (this.arguments.length) {
-            str += '\n\n' + this.formatOptions(this.arguments).join("\n")
-        }
-        if (this.commands.length) {
-            str += '\n\n' + this.formatSubCommands(this.commands).join("\n")
+        if (haveCommand) {
+            str += '\n\n' + this.formatCommands(this.commands)
         }
 
         if (this.options.footer) {
@@ -546,6 +527,7 @@ class CliParser {
         }
         console.log(str)
     }
+
 
 }
 
