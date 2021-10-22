@@ -4,6 +4,7 @@ interface CliParserOptions {
     version?: string;
     maxError?: number;
     stopFlags?: "--" | ";" | null;
+    defaultArg?: boolean;
 }
 interface CliError {
     text: string;
@@ -26,6 +27,7 @@ interface CliArgParams {
     validator?: (value: string) => any;
 }
 interface CliArg {
+    name?: string;
     alias?: string;
     description?: string;
     params?: CliArgParams[];
@@ -46,7 +48,6 @@ interface CliCommand {
 declare class CliParser {
     name: string;
     description: string;
-    options: CliParserOptions;
     protected commands: CliCommand;
     protected arguments: CliArguments;
     protected argumentsAlias: {
@@ -55,15 +56,15 @@ declare class CliParser {
     protected argv: string[];
     protected errors: CliError[];
     protected _ctx: CliContext | null;
+    protected options: CliParserOptions;
     constructor(name: string, description: string, options?: CliParserOptions);
-    protected checkAlias(alias: string | undefined, suffix?: string): void;
     addArgument(name: string, arg?: CliArg): void;
     addCommand(name: string, cmd: Command): void;
     protected convertType(type: any, value: string): string | boolean | number;
     advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliArguments, name: string): number;
     parseFlags(argv: string[], choices: CliArguments, start?: number): [CliArguments, string[]];
-    parseCommand(argv: string[]): void;
-    parseArguments(argv: string[]): void;
+    parseCommand(argv: string[]): boolean;
+    parseArguments(argv: string[]): boolean;
     parse(argv: string[]): boolean;
     _getCallFlag(flags: CliArguments): Function | null;
     get context(): CliContext;

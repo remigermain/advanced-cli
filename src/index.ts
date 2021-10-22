@@ -6,6 +6,7 @@ interface CliParserOptions {
     version?: string,
     maxError?: number,
     stopFlags?: "--" | ";" | null,
+    defaultArg?: boolean
 }
 
 interface CliError {
@@ -31,6 +32,7 @@ interface CliArgParams {
 }
 
 interface CliArg {
+    name?: string
     alias?: string,
     description?: string,
     params?: CliArgParams[],
@@ -64,51 +66,42 @@ class CliParser {
 
     protected _ctx: CliContext | null = null
 
+    protected options: CliParserOptions
     
-    constructor(public name: string, public description: string, public options: CliParserOptions = {}) {
-        this.addArgument('help', {
-            alias: 'h',
-            description: 'Prints help information',
-            call({ parser }) {
-                parser.usage()                
-            }
-        })
+    constructor(public name: string, public description: string, options: CliParserOptions = {}) {
 
-        if (options.version) {
-            this.addArgument('version', {
-                alias: 'v',
-                description: 'Print version info and exit',
-                call({ options, name, description }) {
-                    console.info(`${name} ${options.version}`)
+        this.options = {defaultArg: true, ...options}
+
+        if (this.options.defaultArg) {
+            this.addArgument('help', {
+                alias: 'h',
+                description: 'Prints help information',
+                call({ parser }) {
+                    parser.usage()                
                 }
             })
-        }
-    }
-
-    protected checkAlias(alias: string | undefined, suffix: string = "") {
-        if (alias !== undefined) {
-            if (alias.length != 1) {
-                throw new Error(`alias options '${alias}' need to be only one char ${suffix}`)
-            }
-            if (alias in this.argumentsAlias) {
-                throw new Error(`duplicate alias options '${alias} ${suffix}`)
+            if (this.options.version) {
+                this.addArgument('version', {
+                    alias: 'v',
+                    description: 'Print version info and exit',
+                    call({ options, name }) {
+                        console.info(`${name} ${options.version}`)
+                    }
+                })
             }
         }
     }
-
+    
     addArgument(name: string, arg: CliArg = {}) {
         
         if (name in this.arguments) {
             throw new Error(`duplicate options '${name}'`)
         }
-        if (arg.alias) {
-            this.checkAlias(arg.alias)
+        if (arg.alias && arg.alias.length != 1) {
+            throw new Error(`alias options '${arg.alias}' need to be only one char`)
         }
         // TODO check command alerady exist
         this.arguments[name] = arg
-        if (arg.alias) {
-            this.argumentsAlias[arg.alias] = true
-        }
     }
 
     addCommand(name: string, cmd: Command) {
@@ -116,18 +109,9 @@ class CliParser {
         if (name in this.commands) {
             throw new Error(`Command '${name}' already set`)
         }
-        if (cmd.arguments === undefined) {
+        if (!cmd.arguments) {
             cmd.arguments = {}
         }
-        const alias: {[key:string]: boolean} = {}
-        Object.keys(cmd.arguments).forEach(key => {
-            //@ts-ignore
-            const opt = cmd.arguments[key]
-            if (opt.alias) {
-                this.checkAlias(opt.alias, `from command '${name}'`)
-                alias[opt.alias] = true
-            }
-        })
         cmd.name = name
         this.commands[name] = cmd
     }
@@ -170,22 +154,27 @@ class CliParser {
         }
         
         let i = 0
-        for (;i < arg.params.length; i++) {
+        for (; i < arg.params.length; i++)
+        {
             const param = arg.params[i]
-            if ((index + i) >= argv.length) {
-                if ("default" in param) {
+            if ((index + i) >= argv.length)
+            {
+                if ("default" in param)
+                {
                     info.params.push(param.default)
-                } else {
+                }
+                else
+                {
                     this.errors.push({
                         text: `need ${clc.yellow(arg.params.length)} arguments after flag '${name}'.`,
                         argvi: index + i
                     })
                     break
                 }
-            } else {
-                
+            }
+            else
+            {
                 const value = argv[index + i]
-
                 try {
                     if (param.validator) {
                         info.params.push(param.validator(value))
@@ -196,7 +185,6 @@ class CliParser {
                     this.errors.push({ text: `invalid arugments for flag "${name}", ${e.toString()}`, argvi: index + i })
                     break
                 }
-
             }
         }
         return index + i
@@ -205,62 +193,93 @@ class CliParser {
     parseFlags(argv: string[], choices: CliArguments, start: number = 0): [CliArguments, string[]] {
         const flags: CliArguments = {}
         const anyArgs: string[] = []
-        let stop = false
+        
+    
+        // create a alias object form optimize search
+        const alias: {[key:string]: CliArg} = {}
+        for (const key in choices) {
+            const name = choices[key]
+            if (name.alias !== undefined) {
+                // check alias doublon
+                if (name.alias in alias) {
+                    throw new Error(`duplicate alias options '${name.alias}`)
+                }
+                alias[name.alias] = choices[key]
+                alias[name.alias].name = key
+            }
+        }
 
-        const keys = Object.keys(choices)
+        let stop = false
+        const stopVal = this.options.stopFlags
 
         while (start < argv.length) {
             const val = argv[start]
 
-            if (!stop && val === this.options.stopFlags) {
+            if (val === stopVal)
+            {
                 stop = true
                 start++
-            } else if (stop || val[0] != '-') {
+            }
+            else if (stop || val[0] != '-')
+            {
                 anyArgs.push(val)
                 start++
             }
-            else if (val[1] == '-') {
-                if (val.length == 2) {
+            else if (val[1] == '-')
+            {
+                if (val.length != 2)
+                {
+                    const name = val.substring(2)
+                    if (name in choices)
+                    {
+                        start = this.advFlag(argv, start, choices, flags, name)
+                    }
+                    else
+                    {
+                        this.errors.push({
+                            text: `Found argument '${clc.yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
+                            argvi: start++,
+                            start: 2,
+                            end: val.length - 2
+                        })
+                    }
+                }
+                else
+                {
                     this.errors.push({
                         text: `Empty argument '${clc.yellow('--')}' which wasn't expected.`,
                         argvi: start++,
                         start: 2,
                         end: val.length - 2
                     })
-                    continue
                 }
-                const name = val.substring(2)
-                if (!(name in choices)) {
-                    this.errors.push({
-                        text: `Found argument '${clc.yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
-                        argvi: start++,
-                        start: 2,
-                        end: val.length - 2
-                    })
-                    continue
-                }
-                start = this.advFlag(argv, start, choices, flags, name)
             }
-            else if (val.length != 1) {
+            else if (val.length != 1)
+            {
                 // simple
                 let memStart = start
-                for (let i = 1; i <= val.length - 1; i++) {
-                    
-                    const name = keys.find(k => choices[k].alias === val[i])
-                    if (!name) {
+                for (let i = 1; i <= val.length - 1; i++)
+                {
+                    if (val[i] in alias)
+                    {
+                        //@ts-ignore
+                        memStart = this.advFlag(argv, memStart, choices, flags, alias[val[i]].name)
+                    }
+                    else
+                    {
                         this.errors.push({
                             text: `Found argument '${clc.yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
                             argvi: start,
                             start: i,
                             end: 1
                         })
-                        continue
                     }
-                    memStart = this.advFlag(argv, memStart, choices, flags, name)
                 }
                 start += (memStart === start ? 1 : memStart)
 
-            } else {
+            }
+            else
+            {
                 this.errors.push({
                     text: `Empty argument '${clc.yellow('-')}' which wasn't expected.`,
                     argvi: start++
@@ -271,17 +290,15 @@ class CliParser {
         return [flags, anyArgs]
     }
 
-    parseCommand(argv: string[]) {
-        const name = argv[0]
-
-        if (name in this.commands) {
-            const cmd = this.commands[name]
+    parseCommand(argv: string[]): boolean {
+        if (argv[0] in this.commands) {
+            const cmd = this.commands[argv[0]]
         
             // merge global options with cmd options
             const args = {...this.arguments, ...cmd.arguments}
 
             // change usage function to command usage
-            if ("help" in args) {
+            if ('help' in args) {
                 args.help.call = ({ parser, cmd }) => {
                     if (cmd) {
                         parser.commandUsage(cmd)
@@ -292,32 +309,38 @@ class CliParser {
             const [flags, anyArgs] = this.parseFlags(argv, args, 1)
 
             if (!this.errors.length) {
-                const callFalg = this._getCallFlag(flags)        
-                if (callFalg) {
-                    callFalg(this._createContext(flags, anyArgs, cmd))
-                }
-                else if (cmd.call) {
-                    cmd.call(this._createContext(flags, anyArgs, cmd))
-                }
+                this.printError(argv)
+                return false
+            }
+            const callFalg = this._getCallFlag(flags)
+            if (callFalg) {
+                callFalg(this._createContext(flags, anyArgs, cmd))
+            }
+            else if (cmd.call) {
+                cmd.call(this._createContext(flags, anyArgs, cmd))
             }
         }
-        else if (name[0] == '-') {
-            this.errors.push({ text: `${this.name ?? 'programme'} need to start with command`})
+        else if (argv[0][0] == '-') {
+            this.errors.push({ text: `${this.name ?? 'programme'} need to start with command` })
         } else {
-            this.errors.push({ text: `no such subcommand: '${clc.yellow(name)}''`, argvi: 0})
+            this.errors.push({ text: `no such subcommand: '${clc.yellow(argv[0])}''`, argvi: 0})
         }
+        this.printError(argv)
+        return false
     }
 
-    parseArguments(argv: string[]) {
+    parseArguments(argv: string[]):boolean {
         //parse options
         const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0)
-
-        if (!this.errors.length) {
-            const call = this._getCallFlag(flags)        
-            if (call) {
-                call(this._createContext(flags, anyArgs))
-            }
+        if (this.errors.length) {
+            this.printError(argv)
+            return false
         }
+        const call = this._getCallFlag(flags)        
+        if (call) {
+            call(this._createContext(flags, anyArgs))
+        }
+        return true
     }
 
     parse(argv: string[]): boolean {
@@ -325,14 +348,9 @@ class CliParser {
             this.usage()
         }
         else if (Object.keys(this.commands).length) {
-            this.parseCommand(argv)
+            return this.parseCommand(argv)
         } else {
-            this.parseArguments(argv)
-        }
-
-        if (this.errors.length) {
-            this.printError(argv)
-            return false
+            return this.parseArguments(argv)
         }
         return true
     }

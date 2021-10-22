@@ -20,33 +20,36 @@ console.time('mri');
 const mri = require('mri');
 console.timeEnd('mri');
 
-console.time('advparser');
-const ArgParser = require('../dist/index');
-console.timeEnd('advparser');
-
-
+console.time('advanced-cli');
+const advCli = require('../dist/index');
+console.timeEnd('advanced-cli');
 
 console.log('\nBenchmark:');
 const bench = new Suite();
-const args = ['-b', '--bool', '--no-meep', '--multi=baz'];
+const args = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world', '--pop', 'youpiii', '--soulapa', 'gooogg', 'poeppd', 'ofoooo', '--poloiepdi', 'doouicll', '-e', '-t', 'i', '-i']
 
 
-let i = 0
-let s = 0
-function gg(args) {
-	const par = new ArgParser()
-	par.addArgument('bb', { alias: 'b' })
-	par.addArgument('bool')
-	par.addArgument('no-meep')
-	par.addArgument('multi=baz')
-	return par.parse(args)
-}
 bench
-	// .add('minimist     ', () => minimist(args))
-	// .add('mri (1.1.1)  ', () => previous(args))
-	// .add('mri          ', () => mri(args))
-	// .add('nopt         ', () => nopt(args))
-	// .add('yargs-parser ', () => yargs(args))
-	.add('advparser ', () => gg(args))
+	.add('minimist     ', () => minimist(args))
+	.add('mri (1.1.1)  ', () => previous(args))
+	.add('mri          ', () => mri(args))
+	.add('nopt         ', () => nopt(args))
+	.add('yargs-parser ', () => yargs(args))
+	.add('advanced-cli ', () => {
+		const parser = new advCli()
+		parser.addArgument('bool')
+		parser.addArgument('other', { alias: 'b' })
+		parser.addArgument('aa', { alias: 'a' })
+		parser.addArgument('tt', { alias: 'e' })
+		parser.addArgument('ee', { alias: 't' })
+		parser.addArgument('rr', { alias: 'i' })
+		parser.addArgument('no-meep')
+		parser.addArgument('pop')
+		parser.addArgument('soulapa')
+		parser.addArgument('poloiepdi')
+		parser.addArgument('multi=baz')
+
+		return parser.parse(args)
+	})
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
