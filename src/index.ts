@@ -1,9 +1,9 @@
-import { red, bold, italic, yellow } from 'colorette'
+import { red, bold, italic, yellow } from 'picocolors'
 
 
-import { objectIsEmpty, objectLength, optimizedSplit , contains} from './utils'
+import { objectIsEmpty, optimizedSplit , contains} from './utils'
 
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam } from "./declare"
+import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare"
 
 class CliParser {
 
@@ -130,27 +130,33 @@ class CliParser {
 
         switch (param.type) {
             // number type
-            case Number:
-                const n = Number(value)
-                if (Number.isNaN(n)) {
+            case Number: {
+                const num = Number(value)
+                if (Number.isNaN(num)) {
                     throw new Error(`need a valid ${italic(yellow('number'))}.`)
                 }
-                return n
+                return num
+            }
             // boolean type
-            case Boolean:
+            case Boolean: {
+
                 switch (value) {
                     case "true":
-                    case "yes":
+                    case "yes": {
                         return true
+                    }
                     case "false":
-                    case "no":
+                    case "no": {
                         return false
-                    default:
+                    }
+                    default: {
                         throw new Error(`boolean type, choise are '${yellow('true')}' or '${yellow('true')}'`)
+                    }
                 }
-            // string
-            default:
+            }
+            default: {
                 return value
+            }
         }
     }
 
@@ -252,11 +258,10 @@ class CliParser {
         return index + arg.params.length - undef
     }
 
-    parseFlags(argv: string[], choices: Obj<CliArg>, start: number = 0): [CliFinal, string[]] {
+    parseFlags(argv: string[], choices: Obj<CliArg>, start = 0): [CliFinal, string[]] {
         const flags: CliFinal = {}
         const anyArgs: string[] = []
         
-        let stop = false
         const stopVal = this.options.stopFlags
 
         while (start < argv.length) {
@@ -423,7 +428,7 @@ class CliParser {
         return this.parseArguments(argv)
     }
 
-    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): Function | null {
+    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): CliFunc | null {
 
         for (const key in flags) {
             const call = args[key].call
@@ -513,7 +518,7 @@ class CliParser {
     }
 
     // formating
-    protected formatOptions(options: Obj<CliArg>, prefix: string = "Options:"): string {
+    protected formatOptions(options: Obj<CliArg>, prefix = "Options:"): string {
         
         // remove alais from command
         const nopt: Obj<CliArg> = {}
@@ -555,14 +560,12 @@ class CliParser {
     }
 
     protected formatCommands(cmds: Obj<CliCmd>): string {
-        const arr: string[] = ["Management Commands:"]
-
         let padding = 0
         for (const key in cmds) {
             padding =  Math.max(padding, key.length)
         }
 
-        let str = ""
+        let str = "Management Commands:\n"
         for (const key in cmds) {
             str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`
         }
@@ -605,8 +608,8 @@ class CliParser {
         let str = ""
 
         // check if command and arguments exists, is more optimized to use this otherwise Object.key
-        let haveCommand = !objectIsEmpty(this.commands)
-        let haveArguments = !objectIsEmpty(this.arguments)
+        const haveCommand = !objectIsEmpty(this.commands)
+        const haveArguments = !objectIsEmpty(this.arguments)
 
         str += `Usage: ${this.name} `
         if (this.options.info) {

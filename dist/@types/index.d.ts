@@ -1,4 +1,4 @@
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam } from "./declare";
+import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare";
 declare class CliParser {
     name: string;
     description: string;
@@ -20,7 +20,7 @@ declare class CliParser {
     parseCommand(argv: string[]): boolean;
     parseArguments(argv: string[]): boolean;
     parse(argv: string[]): boolean;
-    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): Function | null;
+    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): CliFunc | null;
     get context(): CliContext;
     _createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | null): CliContext;
     printError(max?: number | null): void;

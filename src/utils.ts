@@ -1,5 +1,5 @@
 
-export function objectIsEmpty(obj: Object): boolean {
+export function objectIsEmpty(obj: object): boolean {
     for (const _ in obj) {
         return false
     }
@@ -7,8 +7,9 @@ export function objectIsEmpty(obj: Object): boolean {
 }
 
 // optimized than Object.keys
-export function objectLength(obj: Object): number {
+export function objectLength(obj: object): number {
     let i = 0
+    /*eslint  @typescript-eslint/no-unused-vars: "off" */
     for (const _ in obj) {
         i++
     }

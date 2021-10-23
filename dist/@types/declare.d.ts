@@ -4,11 +4,12 @@ export interface CliArgParam {
     default?: boolean | number | string;
     validator?: (value: string, params: any[]) => any;
 }
+export declare type CliFunc = (ctx: CliContext) => void;
 export interface CliArgSet {
     description?: string;
     alias?: string;
     params?: CliArgParam[];
-    call?: (ctx: CliContext) => void;
+    call?: CliFunc;
 }
 export interface CliArg extends CliArgSet {
     name: string;
@@ -17,7 +18,7 @@ export interface CliArg extends CliArgSet {
 export interface CliCmdSet {
     alias?: string;
     arguments?: Obj<CliArgSet>;
-    call?: (ctx: CliContext) => void;
+    call?: CliFunc;
 }
 export interface CliCmd extends CliCmdSet {
     name: string;

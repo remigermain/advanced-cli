@@ -7,6 +7,8 @@ export interface CliArgParam {
     validator?: (value: string, params: any[]) => any
 }
 
+export type CliFunc = (ctx: CliContext) => void
+
 //-------------------
 // Arguments
 //-------------------
@@ -16,7 +18,7 @@ export interface CliArgSet {
     description?: string,
     alias?: string,
     params?: CliArgParam[],
-    call?: (ctx: CliContext) => void
+    call?: CliFunc
 }
 
 // convert arguments user by final args
@@ -34,7 +36,7 @@ export interface CliArg extends CliArgSet {
 export interface CliCmdSet {
     alias?: string,
     arguments?:  Obj<CliArgSet>,
-    call?: (ctx: CliContext) => void
+    call?: CliFunc
 }
 
 // final
