@@ -30,7 +30,7 @@ const args = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world
 const args2 = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world']
 const args3 = ['-b', '--bool', '--no-meep', '--multi=baz']
 
-const selec = args
+const selec = args3
 
 
 function fnc() {
@@ -40,15 +40,15 @@ function fnc() {
 	parser.addArgument('no-meep')
 	parser.addArgument('multi=baz')
 	// 2
-	parser.addArgument('aa', { alias: 'a' })
+	// parser.addArgument('aa', { alias: 'a' })
 
 	// 3
-	parser.addArgument('tt', { alias: 'e' })
-	parser.addArgument('ee', { alias: 't' })
-	parser.addArgument('rr', { alias: 'i' })
-	parser.addArgument('pop')
-	parser.addArgument('soulapa')
-	parser.addArgument('poloiepdi')
+	// parser.addArgument('tt', { alias: 'e' })
+	// parser.addArgument('ee', { alias: 't' })
+	// parser.addArgument('rr', { alias: 'i' })
+	// parser.addArgument('pop')
+	// parser.addArgument('soulapa')
+	// parser.addArgument('poloiepdi')
 
 	return parser.parse(selec)
 }

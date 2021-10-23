@@ -45,15 +45,18 @@ describe('commands', () => {
 
         expect(length(commands)).toEqual(1)
         expect(length(args)).toEqual(0)
+        const root = {
+            name: 'root',
+            description: 'root-description',
+            alias: 'r',
+            params: []
+        }
         expect(commands.init).toEqual({
             name: 'init',
             description: 'description',
             arguments: {
-                root: {
-                    description: 'root-description',
-                    alias: 'r',
-                    params: []
-                }
+                root,
+                r: root,
             }
         })
     })
@@ -128,9 +131,8 @@ describe('arguments', () => {
         it('duplicate alias', () => {
             const p = new CliParserMock("name", "description")
             p.addArgument('root', {alias: 'r'})
-            p.addArgument('other', {alias: 'r'})
             expect(() => {
-                p.parse(['test'])
+                p.addArgument('other', {alias: 'r'})
             }).toThrowError()
         })
         it('alias not well formated', () => {
@@ -147,20 +149,25 @@ describe('arguments', () => {
             p.addArgument('root', { alias: 'r', description: 'my-description' })
             p.addArgument('gulp', { alias: 'g', description: 'my-other-description', call: fnc })
             const args = p.jestMockArguments()
-            expect(length(args)).toEqual(2)
-            expect(args.root).toEqual({
+            expect(length(args)).toEqual(4)
+
+            const root = {
                 name: 'root',
                 alias: 'r',
                 description: 'my-description',
                 params: []
-            })
-            expect(args.gulp).toEqual({
+            }
+            const gulp = {
                 name: 'gulp',
                 alias: 'g',
                 description: 'my-other-description',
                 params: [],
                 call: fnc
-            })
+            }
+            expect(args.root).toEqual(root)
+            expect(args.r).toEqual(root)
+            expect(args.root).toEqual(root)
+            expect(args.g).toEqual(gulp)
         })
         it('no alias', () => {
             const fnc = () => { console.log('yop') }
