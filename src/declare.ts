@@ -2,9 +2,9 @@ import CliParser from './index'
 
 // object for defined arguments after flags
 export interface CliArgParam {
-    type: Boolean | Number | String,
-    default?: boolean | Number | String,
-    validator?: (value: string) => any
+    type: NumberConstructor | StringConstructor | BooleanConstructor
+    default?: boolean | number | string,
+    validator?: (value: string, params: any[]) => any
 }
 
 //-------------------
@@ -55,7 +55,8 @@ export interface CliParserOptions {
     footer?: string,
     version?: string,
     stopFlags?: "--" | ";" | null,
-    defaultArg?: boolean
+    defaultArg?: boolean,
+    inline?: boolean,
 }
 
 export interface CliError {

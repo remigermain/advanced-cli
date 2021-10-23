@@ -1,4 +1,4 @@
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj } from "./declare";
+import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam } from "./declare";
 declare class CliParser {
     name: string;
     description: string;
@@ -9,11 +9,13 @@ declare class CliParser {
     protected options: CliParserOptions;
     protected argv: string[];
     constructor(name: string, description: string, options?: CliParserOptions);
-    checkAlias(choices: Obj<CliArg>, arg: CliArg): void;
+    checkArguments(choices: Obj<CliArg>, arg: CliArg): void;
     addArgument(name: string, arg?: CliArgSet): void;
     addCommand(name: string, description: string, cmd?: CliCmdSet): void;
-    protected convertType(type: any, value: string): string | boolean | number;
-    advFlag(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, name: string): number;
+    checkDefault(arg: CliArg, param: CliArgParam): any;
+    checkValue(allParams: any[], param: CliArgParam, value: string): any;
+    advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number;
+    advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number;
     parseFlags(argv: string[], choices: Obj<CliArg>, start?: number): [CliFinal, string[]];
     parseCommand(argv: string[]): boolean;
     parseArguments(argv: string[]): boolean;
