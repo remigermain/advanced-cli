@@ -30,6 +30,8 @@ p.addCommand('doc', 'description', {
     }
 })
 
-const res = p.parse(['doc', '-a', '3', 'yhea', '--run', 's', '344', 'fe', 'd', 'rrreo', '-p', '42', 'lopilop', '--fol', '9', '-h'])
+const res = p.parse(['doc', '-a', '3', 'yhea', '--run', 's', '344', 'fe', 'd', 'rrreo', '-p', '42', 'lopilop', '--fol', '-h'])
 const ctx = p.context
+console.log(res)
+console.log(ctx.flags)
 p.printError()

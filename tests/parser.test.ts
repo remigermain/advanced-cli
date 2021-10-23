@@ -3,22 +3,6 @@ import CliParserMock from "./parserMock"
 
 
 describe('parser', () => {
-    test('check usage output', () => {
-        const p = new CliParserMock("name", "description")
-        console.info = jest.fn()
-        p.parse(['-h'])
-        p.usage()
-        // @ts-ignore
-        expect(console.info.mock.calls[0][0]).toEqual(console.info.mock.calls[1][0])
-    })
-    test('check version output', () => {
-        const version = "1.0.3.45"
-        const p = new CliParserMock("name", "description", {version})
-        console.info = jest.fn()
-        p.parse(['--version'])
-        // @ts-ignore
-        expect(console.info.mock.calls[0][0]).toEqual(`name ${version}`)
-    })
 
     test('empty arguments', () => {
         const p = new CliParserMock("name", "description")
@@ -66,5 +50,22 @@ describe('parser', () => {
         expect(ctx.flags.fol).toEqual([101])
         expect(ctx.anyArgs).toEqual(['3', 'yhea', 'd', 'rrreo', 'lopilop'])
 
+    })
+
+    test('default with flags after', () => {
+        const p = new CliParserMock("name", "description")
+        p.addArgument('root', { params: [{ type: Boolean, default: true }] })
+        p.addArgument('flop', {alias: 'f' })
+        expect(p.parse(['--root', '-f'])).toBeTruthy()
+        const ctx = p.context
+        expect(ctx.flags.root).toEqual([true])
+        expect(ctx.flags.f).toEqual([])
+    })
+
+    test('default with no flags after', () => {
+        const p = new CliParserMock("name", "description")
+        p.addArgument('root', { params: [{ type: Boolean, default: true }] })
+        p.addArgument('flop', {alias: 'f' })
+        expect(p.parse(['--root', 'after', '-f'])).toBeFalsy()
     })
 })

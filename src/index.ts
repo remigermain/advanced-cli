@@ -224,13 +224,19 @@ class CliParser {
             return index
         }
 
+        let undef = 0
         for (let i = 0; i < arg.params.length; i++) {
 
             const param = arg.params[i]
             const isOverFlow = (index + i) >= argv.length
+            const isFlag = !isOverFlow && argv[index + i][0] === '-' || false
 
             try {
-                if (isOverFlow)
+                if (isFlag) {
+                    undef++
+                    allParams.push(this.checkDefault(arg, param))
+                }
+                else if (isOverFlow)
                     allParams.push(this.checkDefault(arg, param))
                 else
                     allParams.push(this.checkValue(allParams, param, argv[index + i]))
@@ -243,7 +249,7 @@ class CliParser {
             }
 
         }
-        return index + arg.params.length
+        return index + arg.params.length - undef
     }
 
     parseFlags(argv: string[], choices: Obj<CliArg>, start: number = 0): [CliFinal, string[]] {
