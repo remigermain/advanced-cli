@@ -1,4 +1,5 @@
-import {red, bold, italic, yellow} from 'colorette'
+import { red, bold, italic, yellow } from 'colorette'
+import { objectIsEmpty, objectLength } from './utils'
 
 interface CliParserOptions {
     info?: string,
@@ -16,7 +17,7 @@ interface CliError {
 }
 interface CliContext {
     cmd?: Command,
-    flags: CliArguments,
+    flags: CliFinal,
     anyArgs: string[],
     parser: CliParser,
     name: string,
@@ -31,18 +32,15 @@ interface CliArgParams {
     validator?: (value: string) => any,
 }
 
-interface CliArg {
-    name?: string
+interface CliArgSet {
     alias?: string,
     description?: string,
     params?: CliArgParams[],
     call?: (ctx: CliContext) => void
 }
-
-interface CliArguments {
-    [key:string]: CliArg
+interface CliArg extends CliArgSet {
+    name: string
 }
-
 
 interface Command {
     name?: string,
@@ -50,15 +48,26 @@ interface Command {
     arguments?: CliArguments,
     call?: (ctx: CliContext) => void
 }
+
+interface CliArguments {
+    [key:string]: CliArg
+}
+
 interface CliCommand {
     [key:string]: Command
+}
+
+interface CliFinal {
+    [key:string]: any[]
 }
 
 class CliParser {
 
     protected commands: CliCommand = {}
     protected arguments: CliArguments = {}
-    protected argumentsAlias: {[key:string]: true} = {}
+
+    protected argumentsAlias: CliArguments = {}
+    protected argumentsCommandAlias: CliArguments = {}
     
     protected errors: CliError[] = []
 
@@ -92,22 +101,37 @@ class CliParser {
         }
     }
 
-    addArgument(name: string, arg: CliArg = {}) {
-        
-        if (name in this.arguments) {
-            throw new Error(`duplicate options '${name}'`)
-        }
-        if (arg.alias && arg.alias.length != 1) {
-            throw new Error(`alias options '${arg.alias}' need to be only one char`)
-        }
+    checkAlias(choices: CliArguments, arg: CliArg) {
 
         // set empty params
         if (!arg.params) {
             arg.params = []
         }
-        // TODO check command alerady exist
-        arg.name = name
-        this.arguments[name] = arg
+
+        if (arg.alias) {
+            // merge alias with arguments
+            if (arg.alias in choices) {
+                throw new Error(`duplicate alias options '${arg.alias}`)
+            }
+            if (arg.alias.length != 1) {
+                throw new Error(`alias options '${arg.alias}' need to be only one char`)
+            }
+            choices[arg.alias] = arg
+        }
+    }
+        
+    addArgument(name: string, arg: CliArgSet = {}) {
+        
+        if (name in this.arguments) {
+            throw new Error(`duplicate options '${name}'`)
+        } else if (name.length < 2) {
+            throw new Error(`name arguments '${name}' need to be upper than one char`)
+        }
+        (arg as CliArg).name = name
+        this.arguments[name] = (arg as CliArg)
+
+        this.checkAlias(this.arguments, (arg as CliArg))
+
     }
 
     addCommand(name: string, description: string, cmd: Command = {}) {
@@ -119,12 +143,11 @@ class CliParser {
             cmd.arguments = {}
         } else {
             // set empty params
+            const args = {...cmd.arguments}
             for (const key in cmd.arguments) {
-                const arg = cmd.arguments[key]
-                if (!arg.params) {
-                    arg.params = []
-                }
+                this.checkAlias(args, cmd.arguments[key])
             }
+            cmd.arguments = args
         }
         cmd.name = name
         cmd.description = description
@@ -155,8 +178,8 @@ class CliParser {
         }
     }
 
-    advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliArguments, name: string): number {
-        const info = {params: [] as any[]}
+    advFlag(argv: string[], index: number, choices: CliArguments, cliArgs: CliFinal, name: string): number {
+        const info : any[]= []
         const arg: CliArg = choices[name]
 
         cliArgs[name] = info
@@ -169,14 +192,13 @@ class CliParser {
         }
         
         let i = 0
-        for (; i < arg.params.length; i++)
-        {
+        for (; i < arg.params.length; i++) {
             const param = arg.params[i]
             if ((index + i) >= argv.length)
             {
-                if ("default" in param)
+                if (param.default !== undefined)
                 {
-                    info.params.push(param.default)
+                    info.push(param.default)
                 }
                 else
                 {
@@ -184,7 +206,6 @@ class CliParser {
                         text: `need ${yellow(arg.params.length)} arguments after flag '${name}'.`,
                         argvi: index + i
                     })
-                    break
                 }
             }
             else
@@ -192,50 +213,29 @@ class CliParser {
                 const value = argv[index + i]
                 try {
                     if (param.validator) {
-                        info.params.push(param.validator(value))
+                        info.push(param.validator(value))
                     } else {
                         this.convertType(param.type, value)
                     }
                 } catch(e: any) {
                     this.errors.push({ text: `invalid arugments for flag "${name}", ${e.toString()}`, argvi: index + i })
-                    break
                 }
             }
         }
         return index + i
     }
 
-    parseFlags(argv: string[], choices: CliArguments, start: number = 0): [CliArguments, string[]] {
-        const flags: CliArguments = {}
+    parseFlags(argv: string[], choices: CliArguments, start: number = 0): [CliFinal, string[]] {
+        const flags: CliFinal = {}
         const anyArgs: string[] = []
         
-    
-        // create a alias object form optimize search
-        const alias: {[key:string]: CliArg} = {}
-        for (const key in choices) {
-            const name = choices[key]
-            if (name.alias !== undefined) {
-                // check alias doublon
-                if (name.alias in alias) {
-                    throw new Error(`duplicate alias options '${name.alias}`)
-                }
-                alias[name.alias] = choices[key]
-                alias[name.alias].name = key
-            }
-        }
-
         let stop = false
         const stopVal = this.options.stopFlags
 
-        while (start < argv.length) {
+        while (start < argv.length && argv[start] !== stopVal) {
             const val = argv[start]
 
-            if (val === stopVal)
-            {
-                stop = true
-                start++
-            }
-            else if (stop || val[0] != '-')
+            if (val[0] != '-')
             {
                 anyArgs.push(val)
                 start++
@@ -245,7 +245,8 @@ class CliParser {
                 if (val.length != 2)
                 {
                     const name = val.substring(2)
-                    if (name in choices)
+                    // if (name in choices)
+                    if (choices[name])
                     {
                         start = this.advFlag(argv, start, choices, flags, name)
                     }
@@ -275,15 +276,15 @@ class CliParser {
                 let memStart = start
                 for (let i = 1; i <= val.length - 1; i++)
                 {
-                    if (val[i] in alias)
+                    const value = choices[val[i]]
+                    if (value)
                     {
-                        //@ts-ignore
-                        memStart = this.advFlag(argv, memStart, choices, flags, alias[val[i]].name)
+                        memStart = this.advFlag(argv, memStart, choices, flags, value.name)
                     }
                     else
                     {
                         this.errors.push({
-                            text: `Found argument '${yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
+                            text: `Found argument '${yellow(`-${value}`)}' which wasn't expected, or isn't valid in this context.`,
                             argvi: start,
                             start: i,
                             end: 1
@@ -301,6 +302,10 @@ class CliParser {
                 })
             }
         }
+        // add all arguments after stopFlag
+        while (start < argv.length) {
+            anyArgs.push(argv[start++])
+        }
 
         return [flags, anyArgs]
     }
@@ -313,25 +318,28 @@ class CliParser {
             const args = {...this.arguments, ...cmd.arguments}
 
             // change usage function to command usage
-            if ('help' in args) {
+            if (args.help) {
                 args.help.call = ({ parser, cmd }) => {
                     if (cmd) {
                         parser.commandUsage(cmd)
                     }
                 }
             }
+
             //parse options
             const [flags, anyArgs] = this.parseFlags(argv, args, 1)
+
+            const ctx = this._createContext(flags, anyArgs, cmd)
 
             if (this.errors.length) {
                 return false
             }
             const callFalg = this._getCallFlag(flags, args)
             if (callFalg) {
-                callFalg(this._createContext(flags, anyArgs, cmd))
+                callFalg(ctx)
             }
             else if (cmd.call) {
-                cmd.call(this._createContext(flags, anyArgs, cmd))
+                cmd.call(ctx)
             }
             return true
         }
@@ -343,16 +351,20 @@ class CliParser {
         return false
     }
 
-    parseArguments(argv: string[]):boolean {
+    parseArguments(argv: string[]): boolean {
+
         //parse options
         const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0)
+        
+        const ctx = this._createContext(flags, anyArgs,)
+        
         if (this.errors.length) {
             return false
         }
-        const call = this._getCallFlag(flags, this.arguments)
         
+        const call = this._getCallFlag(flags, this.arguments)
         if (call) {
-            call(this._createContext(flags, anyArgs,))
+            call(ctx)
         }
         return true
     }
@@ -361,16 +373,16 @@ class CliParser {
         this.argv = argv
         if (argv.length == 0) {
             this.usage()
+            return false
         }
-        else if (Object.keys(this.commands).length) {
-            return this.parseCommand(argv)
-        } else {
+        else if (objectIsEmpty(this.commands)) {
             return this.parseArguments(argv)
+        } else {
+            return this.parseCommand(argv)
         }
-        return true
     }
 
-    _getCallFlag(flags: CliArguments, args: CliArguments): Function | null {
+    _getCallFlag(flags: CliFinal, args: CliArguments): Function | null {
 
         for (const key in flags) {
             const call = args[key].call
@@ -388,7 +400,7 @@ class CliParser {
         return this._ctx
     }
 
-    _createContext(flags: CliArguments, anyArgs: string[], cmd: Command | null = null): CliContext {
+    _createContext(flags: CliFinal, anyArgs: string[], cmd: Command | null = null): CliContext {
         const ctx: CliContext = {
             flags,
             anyArgs,
@@ -423,6 +435,7 @@ class CliParser {
         }
         
         let str = ""
+        // TODO
         errors.forEach(err => {
             str += `${red(bold('error'))}: ${err.text}\n`
             
@@ -459,24 +472,24 @@ class CliParser {
 
     // formating
     protected formatOptions(options: CliArguments, prefix: string = "Options:"): string {
-
-        const keys = Object.keys(options)
-
         // calcul padding space
 
         const mem: {[key:string]: number} = {}
-        const padding = keys.reduce((num, key) => {
+
+        let padding = 0
+        for (const key in options) {
+
             const opt = options[key]
-            
             mem[key] = key.length
             if (opt.params && opt.params.length) {
                 mem[key] += opt.params.reduce((c, p) => c + p.type.constructor.name.length, 0)
             }
-            return Math.max(num, mem[key])
-        }, 0)
+            padding = Math.max(padding, mem[key])
+        }
 
         let str = prefix + '\n'
-        keys.forEach(key => {
+
+        for (const key in options) {
             const opt = options[key]
 
             str += (opt.alias ? `-${opt.alias}, ` : '    ')
@@ -487,21 +500,22 @@ class CliParser {
             // space padding 
             str += " ".repeat(padding - mem[key] + 1)
             str += opt.description ?? italic("no information.")
-        })
+        }
         return str
     }
 
     protected formatCommands(cmds: CliCommand): string {
         const arr: string[] = ["Management Commands:"]
 
-        const keys = Object.keys(cmds)
-        const padding = keys.reduce((c, key) => Math.max(c, key.length), 0)
+        let padding = 0
+        for (const key in cmds) {
+            padding =  Math.max(padding, key.length)
+        }
 
         let str = ""
-        keys.forEach(key => {
+        for (const key in cmds) {
             str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`
-        })
-        
+        }
         return str
     }
 
@@ -509,7 +523,7 @@ class CliParser {
 
         if (typeof cmd === "string") {
             const tcmd = this.commands[cmd]
-            if (tcmd === undefined) {
+            if (!tcmd) {
                 throw new Error(`'${cmd}' not found in commands`)
             }
             cmd = tcmd
@@ -540,8 +554,9 @@ class CliParser {
     usage() {
         let str = ""
 
-        const haveCommand = Object.keys(this.commands).length > 0
-        const haveArguments = Object.keys(this.arguments).length > 0
+        // check if command and arguments exists, is more optimized to use this otherwise Object.key
+        let haveCommand = !objectIsEmpty(this.commands)
+        let haveArguments = !objectIsEmpty(this.arguments)
 
         str += `Usage: ${this.name} `
         if (this.options.info) {

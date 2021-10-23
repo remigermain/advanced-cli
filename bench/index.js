@@ -27,29 +27,40 @@ console.timeEnd('advanced-cli');
 console.log('\nBenchmark:');
 const bench = new Suite();
 const args = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world', '--pop', 'youpiii', '--soulapa', 'gooogg', 'poeppd', 'ofoooo', '--poloiepdi', 'doouicll', '-e', '-t', 'i', '-i']
+const args2 = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world']
+const args3 = ['-b', '--bool', '--no-meep', '--multi=baz']
+
+const selec = args
+
+
+function fnc() {
+	const parser = new advCli()
+	parser.addArgument('other', { alias: 'b' })
+	parser.addArgument('bool')
+	parser.addArgument('no-meep')
+	parser.addArgument('multi=baz')
+	// 2
+	parser.addArgument('aa', { alias: 'a' })
+
+	// 3
+	parser.addArgument('tt', { alias: 'e' })
+	parser.addArgument('ee', { alias: 't' })
+	parser.addArgument('rr', { alias: 'i' })
+	parser.addArgument('pop')
+	parser.addArgument('soulapa')
+	parser.addArgument('poloiepdi')
+
+	return parser.parse(selec)
+}
+console.log(fnc())
 
 
 bench
-	.add('minimist     ', () => minimist(args))
-	.add('mri (1.1.1)  ', () => previous(args))
-	.add('mri          ', () => mri(args))
-	.add('nopt         ', () => nopt(args))
-	.add('yargs-parser ', () => yargs(args))
-	.add('advanced-cli ', () => {
-		const parser = new advCli()
-		parser.addArgument('bool')
-		parser.addArgument('other', { alias: 'b' })
-		parser.addArgument('aa', { alias: 'a' })
-		parser.addArgument('tt', { alias: 'e' })
-		parser.addArgument('ee', { alias: 't' })
-		parser.addArgument('rr', { alias: 'i' })
-		parser.addArgument('no-meep')
-		parser.addArgument('pop')
-		parser.addArgument('soulapa')
-		parser.addArgument('poloiepdi')
-		parser.addArgument('multi=baz')
-
-		return parser.parse(args)
-	})
+	.add('minimist     ', () => minimist(selec))
+	.add('mri (1.1.1)  ', () => previous(selec))
+	.add('mri          ', () => mri(selec))
+	.add('nopt         ', () => nopt(selec))
+	.add('yargs-parser ', () => yargs(selec))
+	.add('advanced-cli ', fnc)
 	.on('cycle', e => console.log(String(e.target)))
 	.run();

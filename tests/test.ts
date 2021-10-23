@@ -34,7 +34,7 @@ describe('commands', () => {
         const p = new CliParserMock("name", "description", {defaultArg: false})
         p.addCommand('init', 'description', {
             arguments: {
-                'root': {
+                root: {
                     alias: 'r',
                     description: 'root-description'
                 }
