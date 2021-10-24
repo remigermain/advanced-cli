@@ -20,25 +20,19 @@ export function objectLength(obj: object): number {
 export function optimizedSplit(name: string, c: string): string[] {
     const arr: string[] = []
 
-    let start = 0
+    let start = -1
     let i = 0
-    while (name[i] == c) {
-        i++
+    if (!name) {
+        return arr
     }
     while (i < name.length) {
         if (name[i] == c) {
-            arr.push(name.substring(start, i))
-            while (name[i] == c) {
-                i++
-            }
+            arr.push(name.substring(start + 1, i))
             start = i
-        } else {
-            i++
         }
+        i++
     }
-    if (start != name.length) {
-        arr.push(name.substring(start, name.length))
-    }
+    arr.push(name.substring(start + 1, name.length))
     return arr
 }
 

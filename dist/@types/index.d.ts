@@ -12,10 +12,13 @@ declare class CliParser {
     checkArguments(choices: Obj<CliArg>, arg: CliArg): void;
     addArgument(name: string, arg?: CliArgSet): void;
     addCommand(name: string, description: string, cmd?: CliCmdSet): void;
-    checkDefault(arg: CliArg, param: CliArgParam): any;
+    checkDefault(param: CliArgParam): any;
+    convertValue(param: CliArgParam, value: string): any;
     checkValue(allParams: any[], param: CliArgParam, value: string): any;
     advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number;
     advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number;
+    parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number): number;
+    parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number): number;
     parseFlags(argv: string[], choices: Obj<CliArg>, start?: number): [CliFinal, string[]];
     parseCommand(argv: string[]): boolean;
     parseArguments(argv: string[]): boolean;
@@ -23,6 +26,7 @@ declare class CliParser {
     _getCallFlag(flags: CliFinal, args: Obj<CliArg>): CliFunc | null;
     get context(): CliContext;
     _createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | null): CliContext;
+    addError(text: string, argvi: number, start?: number | undefined, end?: number | undefined): void;
     printError(max?: number | null): void;
     protected formatOptions(options: Obj<CliArg>, prefix?: string): string;
     protected formatCommands(cmds: Obj<CliCmd>): string;

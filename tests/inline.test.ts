@@ -52,11 +52,9 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
-                    type: String,
                     validator: () => 4242
                 },
                 {
-                    type: String,
                     validator: () => 101
                 }
                 
@@ -73,14 +71,12 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
-                    type: String,
                     validator: (value, arr) => {
                         fnc(String(value), [...arr])
                         return 101
                     }
                 },
                 {
-                    type: String,
                     default: 42,
                     validator: fnc2
                 }
@@ -103,14 +99,12 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
-                    type: String,
                     validator: (value, arr) => {
                         fnc(String(value), [...arr])
                         return 101
                     }
                 },
                 {
-                    type: Number,
                     validator: (value, arr) => {
                         fnc2(String(value), [...arr])
                         return 4242
@@ -153,15 +147,61 @@ describe('inline arguments', () => {
     })
     it('no inline', () => {
 
-        const p = new CliParserMock("name", "description", { inline: false })
+        const p = new CliParserMock("name", "description", { inline: true })
         
         p.addArgument('foo', {
             alias: 'f',
             params: [
                 {type: Number},{type: String},{type: String},{type: Boolean},{type: String},
         ]})
-        expect(p.parse(['--foo', "6774","PI","88699","true","poitou"])).toBeTruthy()
+        expect(p.parse(['--foo=6774,PI,88699,true,poitou'])).toBeTruthy()
         const fl = p.context.flags
         expect(fl.foo).toEqual([6774, "PI", "88699", true, "poitou"])
+    })
+
+    it('multiple egal', () => {
+        const p = new CliParserMock("name", "description", { inline: true })
+        p.addArgument('foo', {
+            alias: 'f',
+            params: [{ type: Number }, { type: String }]
+        })
+        expect(p.parse(['--foo=43=54'])).toBeFalsy()
+        expect(p.jestMockErrors().length).toEqual(1)
+    })
+    it('empty egal', () => {
+        const p = new CliParserMock("name", "description", { inline: true })
+        p.addArgument('foo', {
+            alias: 'f',
+            params: [{ type: Number }, { type: String }]
+        })
+        expect(p.parse(['--foo='])).toBeFalsy()
+        expect(p.jestMockErrorsLength()).toEqual(2)
+        })
+    it('multiple comat', () => {
+        const p = new CliParserMock("name", "description", { inline: true })
+        p.addArgument('foo', {
+            alias: 'f',
+            params: [{ type: Number }, { type: String }]
+        })
+        expect(p.parse(['--foo=43,,54'])).toBeFalsy()
+        expect(p.jestMockErrors().length).toEqual(1)
+    })
+    it('multiple args', () => {
+        const p = new CliParserMock("name", "description", { inline: true })
+        p.addArgument('foo', {
+            alias: 'f',
+            params: [{ type: Number }, { type: String }]
+        })
+        expect(p.parse(['--foo=43,54,54'])).toBeFalsy()
+        expect(p.jestMockErrors().length).toEqual(1)
+    })
+    it('multiple egal', () => {
+        const p = new CliParserMock("name", "description", { inline: true })
+        p.addArgument('foo', {
+            alias: 'f',
+            params: [{ type: Number }, { type: String }]
+        })
+        expect(p.parse(['--foo======='])).toBeFalsy()
+        expect(p.jestMockErrors().length).toEqual(1)
     })
 })

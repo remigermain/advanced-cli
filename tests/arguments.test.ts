@@ -93,4 +93,25 @@ describe('arguments', () => {
         expect(fnc).toBeCalledTimes(1)
         expect(fnc).toBeCalledWith(p.jestMockContext())
     })
+
+    test('validator and type set', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        expect(() => {
+            p.addArgument('root', { alias: 'r', params: [{type: Boolean, validator() {}}] })
+        }).toThrowError()
+    })
+    test('validator and type not set', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        expect(() => {
+            p.addArgument('root', { alias: 'r', params: [{}] })
+        }).toThrowError()
+    })
+    test('type set', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        p.addArgument('root', { alias: 'r', params: [{type:String}] })
+    })
+    test('validator set', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        p.addArgument('root', { alias: 'r', params: [{ validator() {} }] })
+    })
 })

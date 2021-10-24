@@ -5,6 +5,19 @@ import { objectIsEmpty, optimizedSplit , contains} from './utils'
 
 import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare"
 
+import {
+    INVALID_FLAG,
+    EMPTY_ARG,
+    CMD_NOT_FOUND,
+    CMD_FIRST,
+    INVALID_ARG,
+    INVALID_LENGTH_ARG,
+    INVALID_FORMATING,
+    NEED_ARGUMENT,
+    INVALID_NUMBER,
+    INVALID_BOOL
+} from "./error"
+
 class CliParser {
 
     protected commands: Obj<CliCmd> = {}
@@ -59,8 +72,13 @@ class CliParser {
         } else {
             // set default type
             arg.params.forEach(p => {
-                if (p.type === undefined) {
-                    p.type = String
+                const type = p.type !== undefined
+                const validator = p.validator !== undefined
+
+                if (type && validator) {
+                    throw new Error(`arguments '${arg.name}' have 'type' and 'validator' set, you need only once`)
+                } else if (!validator && !type) {
+                    throw new Error(`arguments '${arg.name}' not have 'type' and 'validator' set, you need set once`)
                 }
             })
         }
@@ -124,46 +142,40 @@ class CliParser {
         this.commands[name] = tcmd
     }
 
-    checkDefault(arg: CliArg, param: CliArgParam): any {
+    checkDefault(param: CliArgParam): any {
         if (param.default !== undefined)
             return param.default
-        throw new Error(`need ${yellow(arg.params.length)} arguments.`)
+        throw new Error(NEED_ARGUMENT(param.type))
+    }
+
+    convertValue(param: CliArgParam, value: string): any {
+        
+        if (param.type == Number) {
+            const num = Number(value)
+            if (Number.isNaN(num)) {
+                throw new Error(INVALID_NUMBER)
+            }
+            return num
+        } else if (param.type === Boolean) {
+            switch (value) {
+                case "true":
+                case "yes":
+                    return true
+                case "false":
+                case "no":
+                    return false
+                default:
+                    throw new Error(INVALID_BOOL)
+            }
+        }
+        return value
     }
 
     checkValue(allParams: any[], param: CliArgParam, value: string): any {
         if (param.validator) {
             return param.validator(value, allParams)
         }
-        switch (param.type) {
-            // number type
-            case Number: {
-                const num = Number(value)
-                if (Number.isNaN(num)) {
-                    throw new Error(`need a valid ${italic(yellow('number'))}.`)
-                }
-                return num
-            }
-            // boolean type
-            case Boolean: {
-
-                switch (value) {
-                    case "true":
-                    case "yes": {
-                        return true
-                    }
-                    case "false":
-                    case "no": {
-                        return false
-                    }
-                    default: {
-                        throw new Error(`need a valid boolean, choice are '${yellow('true')}' or '${yellow('false')}'`)
-                    }
-                }
-            }
-            default: {
-                return value
-            }
-        }
+        return this.convertValue(param, value)
     }
 
     advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number {
@@ -177,25 +189,17 @@ class CliParser {
         }
 
         if (_spliter.length != 2) {
-            this.errors.push({
-                text: `Invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'`,
-                argvi: index,
-                start: 2
-            })
+            this.addError(INVALID_FORMATING, index, 2)
             return index + 1
         }
 
         const subArgv = optimizedSplit(_spliter[1], ',')
         if (subArgv.length > arg.params.length) {
-            this.errors.push({
-                text: `Need ${yellow(arg.params.length)} arguments after flag '${yellow(`--${arg.name}`)}'.`,
-                argvi: index,
-                start: _spliter[0].length + 2,
-            })
+            this.addError(INVALID_LENGTH_ARG(arg.name, arg.params.length), index, _spliter[0].length + 2)
             return index + 1
         }
 
-        let start = 2 + arg.name.length + 1
+        let arrow = 2 + arg.name.length + 1
         for (let i = 0; i < arg.params.length; i++) {
 
             const param = arg.params[i]
@@ -203,19 +207,14 @@ class CliParser {
 
             try {
                 if (isOverFlow)
-                    allParams.push(this.checkDefault(arg, param))
+                    allParams.push(this.checkDefault(param))
                 else
                     allParams.push(this.checkValue(allParams, param, subArgv[i]))
             } catch (e: any) {
-                this.errors.push({
-                    text: `Invalid arugments for flag '${yellow(arg.name)}', ${e.message}`,
-                    argvi: index,
-                    start: start,
-                    end: (isOverFlow) ? 0 : subArgv[i].length
-                })
+                this.addError(INVALID_ARG(arg.name, e.message), index, arrow, (isOverFlow ? 0 : subArgv[i].length))
             } finally {
                 if (!isOverFlow) {
-                    start += subArgv[i].length + 1
+                    arrow += subArgv[i].length + 1
                 }
             }
         }
@@ -229,8 +228,6 @@ class CliParser {
         if (arg.alias) {
             cliArgs[arg.alias] = allParams
         }
-
-        index++
 
         if (!arg.params.length) {
             return index
@@ -246,17 +243,14 @@ class CliParser {
             try {
                 if (isFlag) {
                     undef++
-                    allParams.push(this.checkDefault(arg, param))
+                    allParams.push(this.checkDefault(param))
                 }
                 else if (isOverFlow)
-                    allParams.push(this.checkDefault(arg, param))
+                    allParams.push(this.checkDefault(param))
                 else
                     allParams.push(this.checkValue(allParams, param, argv[index + i]))
             } catch (e: any) {
-                this.errors.push({
-                    text: `Invalid arugments for flag '${yellow(match)}', ${e.message}`,
-                    argvi: index,
-                })
+                this.addError(INVALID_ARG(match, e.message), index)
                 return index
             }
 
@@ -264,98 +258,73 @@ class CliParser {
         return index + arg.params.length - undef
     }
 
+    parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number) {
+        if (val.length != 2)
+        {
+            const name = val.substring(2)
+            
+            // split for falg key=value,value...
+            const spli = (this.options.inline ? optimizedSplit(name, '=') : [name])
+
+            if (choices[spli[0]] !== undefined)
+            {
+                if (!this.options.inline || spli.length == 1) {
+                    start = this.advFlag(argv, start + 1, flags, choices[name], name)
+                } else {
+                    start = this.advFlagInline(argv, start, choices, flags, spli)
+                }
+            } else {
+                this.addError(INVALID_FLAG(name), start++, 2, val.length - 2)
+            }
+        } else {
+            this.addError(EMPTY_ARG('--'), start++, 2, val.length - 2)
+        }
+        return start
+    }
+
+    parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number) {
+        // simple
+
+        let mem = start
+
+        for (let i = 1; i <= val.length - 1; i++) {
+            const value = choices[val[i]]
+
+            if (value !== undefined) {
+                mem = this.advFlag(argv, mem + 1, flags, value, val[i])
+            } else {
+                this.addError(INVALID_FLAG(val[i]), start, i, 1)
+            }
+        }
+        return Math.max(start + 1, mem)
+
+    }
+
     parseFlags(argv: string[], choices: Obj<CliArg>, start = 0): [CliFinal, string[]] {
         const flags: CliFinal = {}
         const anyArgs: string[] = []
         
-        const stopVal = this.options.stopFlags
-
-        while (start < argv.length) {
+        while (start < argv.length && argv[start] !== this.options.stopFlags) {
             const val = argv[start]
 
-            if (argv[start] === stopVal) {
-                start++
-                break
-            }
-
-            if (val[0] != '-')
-            {
+            if (val[0] != '-') {
                 anyArgs.push(val)
                 start++
             }
-            else if (val[1] == '-')
-            {
-                if (val.length != 2)
-                {
-                    const name = val.substring(2)
-                    
-                    // split for falg key=value,value...
-                    let spliter
-                    if (this.options.inline) {
-                        spliter = optimizedSplit(name, '=')
-                    } else {
-                        spliter = [name]
-                    }
-                    if (choices[spliter[0]] !== undefined)
-                    {
-                        if (!this.options.inline || spliter.length == 1) {
-                            start = this.advFlag(argv, start, flags, choices[name], name)
-                        } else {
-                            start = this.advFlagInline(argv, start, choices, flags, spliter)
-                        }
-                    }
-                    else
-                    {
-                        this.errors.push({
-                            text: `Found argument '${yellow(`--${name}`)}' which wasn't expected, or isn't valid in this context.`,
-                            argvi: start++,
-                            start: 2,
-                            end: val.length - 2
-                        })
-                    }
-                }
-                else
-                {
-                    this.errors.push({
-                        text: `Empty argument '${yellow('--')}' which wasn't expected.`,
-                        argvi: start++,
-                        start: 2,
-                        end: val.length - 2
-                    })
-                }
+            else if (val[1] == '-') {
+                start = this.parseMulti(flags, argv, val, choices, start)
             }
-            else if (val.length != 1)
-            {
-                // simple
-                let memStart = start
-                for (let i = 1; i <= val.length - 1; i++)
-                {
-                    const value = choices[val[i]]
-                    if (value !== undefined)
-                    {
-                        memStart = this.advFlag(argv, memStart, flags, value, val[i])
-                    }
-                    else
-                    {
-                        this.errors.push({
-                            text: `Found argument '${yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
-                            argvi: start,
-                            start: i,
-                            end: 1
-                        })
-                    }
-                }
-                start = (memStart === start ? start + 1 : memStart)
-
-            }
-            else
-            {
-                this.errors.push({
-                    text: `Empty argument '${yellow('-')}' which wasn't expected.`,
-                    argvi: start++
-                })
+            else if (val.length != 1) {
+                start = this.parseSimple(flags, argv, val, choices, start)
+            } else {
+                this.addError(EMPTY_ARG('-'), start++)
             }
         }
+
+        if (argv[start] === this.options.stopFlags) {
+            start++
+        }
+
         // add all arguments after stopFlag
         while (start < argv.length) {
             anyArgs.push(argv[start++])
@@ -396,11 +365,8 @@ class CliParser {
                 cmd.call(ctx)
             }
             return true
-        } else if (argv[0][0] == '-') {
-            this.errors.push({ text: `first argument '${yellow(argv[0])}' need to be a command, not flags.`, argvi: 0 })
-        }
-        else {
-            this.errors.push({ text: `no such command: '${yellow(argv[0])}'`, argvi: 0})
+        } else {
+            this.addError((argv[0][0] == '-' ? CMD_FIRST(argv[0]) :  CMD_NOT_FOUND(argv[0])), 0)
         }
         return false
     }
@@ -475,9 +441,21 @@ class CliParser {
     //      utils
     //------------------------------------------
 
+    addError(text: string, argvi: number, start: number | undefined = undefined, end: number | undefined = undefined) {
+        for (let i = 0; i < this.errors.length; i++) {
+            const err = this.errors[i]
+            if (err.argvi === argvi && err.start === start && err.end === end) {
+                err.text.push(text)
+                return
+            }
+        }
+        this.errors.push({ text: [text], argvi, start, end })
+    }
+
     // format
 
     printError(max: number | null = null) {
+
         
         const argv = this.argv
 
@@ -490,11 +468,12 @@ class CliParser {
         }
         
         let str = ""
+        
         errors.forEach(err => {
-            str += `${red(bold('error'))}: ${err.text}\n`
+            str += `${red(bold('error'))}: ${err.text.join('\n' + ' '.repeat(7))}\n`
             
             if (err.argvi !== undefined) {
-
+                
                 // calcul padding spaces
                 str += argvLine
                 let spaces = err.argvi + pref
@@ -503,7 +482,7 @@ class CliParser {
                 }
                 
                 str += " ".repeat(spaces)
-
+                
                 // generate arrow
                 const len = argv[err.argvi]?.length || 1
                 if (err.start === undefined) {
@@ -522,7 +501,8 @@ class CliParser {
             }
         })
         if (this.errors.length >= 5) {
-            str += `total errors: ${red(bold(this.errors.length))}`
+            const total = this.errors.reduce((c, e) => e.text.length + c, 0)
+            str += `total errors: ${red(bold(total))}`
         }
         console.error(str.trim())
     }

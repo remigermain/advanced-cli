@@ -84,7 +84,6 @@ parser.addCommand("search", "Search the Docker Hub for images", {
     group: {
       params: [
         {
-          type: String,
           validator(value) {
             const choices = ["root", "user", "dev"];
             if (choices.includes(value)) {
@@ -161,9 +160,10 @@ various options is available
 
 // Params
 {
-    type: Number | Boolean | String, // the arguments type, is convert to it
+    type?: Number | Boolean | String, // the arguments type, is convert to it
     default?: boolean | number | string,// if is not have arguments,it get the default value
     validator?: (value: string, params: any[]) // pass the value in funciton, and do complex validation on it
+    // you need to set type or validator, no both
 }
 
 // Arguments
@@ -294,29 +294,26 @@ Script made by [mri](https://github.com/lukeed/mri), **nodejs v14.18.0**
 **inline mode disable**
 
 ```
-Load Times:
-nopt: 4.226ms
-yargs-parser: 7.521ms
-minimist: 2.652ms
-mri: 0.021ms
-advanced-cli: 2.248ms
+nopt: 2.163ms
+yargs-parser: 4.11ms
+minimist: 0.722ms
+mri: 1.827ms
+advanced-cli: 2.469ms
 
 Benchmark: small: [-b, --bool, --no-meep, --multi=baz]
-minimist      x 204,030 ops/sec ±12.29% (85 runs sampled)
-mri (1.1.1)   x 835,731 ops/sec ±0.29% (89 runs sampled)
-mri           x 837,101 ops/sec ±0.36% (89 runs sampled)
-nopt          x 536,992 ops/sec ±0.33% (91 runs sampled)
-yargs-parser  x 23,128 ops/sec ±3.52% (87 runs sampled)
-advanced-cli  x 1,002,990 ops/sec ±0.28% (90 runs sampled)
+minimist      x 214,159 ops/sec ±2.52% (88 runs sampled)
+mri           x 802,334 ops/sec ±0.46% (91 runs sampled)
+nopt          x 539,295 ops/sec ±0.43% (90 runs sampled)
+yargs-parser  x 24,081 ops/sec ±1.06% (89 runs sampled)
+advanced-cli  x 1,009,619 ops/sec ±0.62% (94 runs sampled)
 
 Benchmark: big: [-b, --bool, --no-meep, --multi=baz, -a, hellow, world, --pop, youpiii, --soulapa, gooogg, poeppd, ofoooo, --poloiepdi, doouicll, -e, -t, i, -i]
-minimist      x 92,031 ops/sec ±0.26% (91 runs sampled)
-mri (1.1.1)   x 315,755 ops/sec ±0.15% (90 runs sampled)
-mri           x 313,307 ops/sec ±0.21% (92 runs sampled)
-nopt          x 253,122 ops/sec ±0.38% (92 runs sampled)
-yargs-parser  x 8,395 ops/sec ±2.84% (90 runs sampled)
-advanced-cli  x 387,811 ops/sec ±0.39% (90 runs sampled)
-Done in 66.48s.
+minimist      x 88,641 ops/sec ±0.37% (92 runs sampled)
+mri           x 310,990 ops/sec ±0.31% (90 runs sampled)
+nopt          x 258,311 ops/sec ±0.60% (89 runs sampled)
+yargs-parser  x 8,319 ops/sec ±1.56% (85 runs sampled)
+advanced-cli  x 387,050 ops/sec ±0.76% (87 runs sampled)
+Done in 55.78s.
 ```
 
 **inline mode enable**
@@ -326,7 +323,7 @@ Load Times:
 nopt: 2.443ms
 yargs-parser: 4.62ms
 minimist: 2.014ms
-mri: 0.011ms
+mri: 1.918ms
 advanced-cli: 2.586ms
 
 Benchmark: small: [-b, --bool, --no-meep, --multi=baz]

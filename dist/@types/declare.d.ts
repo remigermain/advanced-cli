@@ -1,14 +1,17 @@
 import CliParser from './index';
-export interface CliArgParam {
-    type: NumberConstructor | StringConstructor | BooleanConstructor;
+export interface CliArgParamSet {
+    type?: NumberConstructor | StringConstructor | BooleanConstructor;
     default?: boolean | number | string;
     validator?: (value: string, params: any[]) => any;
+}
+export interface CliArgParam extends CliArgParamSet {
+    type: NumberConstructor | StringConstructor | BooleanConstructor;
 }
 export declare type CliFunc = (ctx: CliContext) => void;
 export interface CliArgSet {
     description?: string;
     alias?: string;
-    params?: CliArgParam[];
+    params?: CliArgParamSet[];
     call?: CliFunc;
 }
 export interface CliArg extends CliArgSet {
@@ -34,7 +37,7 @@ export interface CliParserOptions {
     inline?: boolean;
 }
 export interface CliError {
-    text: string;
+    text: string[];
     argvi?: number;
     start?: number;
     end?: number;
