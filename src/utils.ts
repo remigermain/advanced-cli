@@ -22,6 +22,9 @@ export function optimizedSplit(name: string, c: string): string[] {
 
     let start = 0
     let i = 0
+    if (!name) {
+        return arr
+    }
     while (name[i] == c) {
         i++
     }

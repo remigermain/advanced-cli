@@ -7,7 +7,7 @@ const def = {
   output: {
     dir: "dist",
     name: "index",
-    format: "umd",
+    format: "cjs",
   },
   plugins: [
     babel({

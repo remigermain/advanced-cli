@@ -1,32 +1,24 @@
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare";
-declare class CliParser {
-    name: string;
-    description: string;
-    protected commands: Obj<CliCmd>;
-    protected arguments: Obj<CliArg>;
-    protected errors: CliError[];
-    protected _ctx: CliContext | null;
-    protected options: CliParserOptions;
-    protected argv: string[];
-    constructor(name: string, description: string, options?: CliParserOptions);
-    checkArguments(choices: Obj<CliArg>, arg: CliArg): void;
-    addArgument(name: string, arg?: CliArgSet): void;
-    addCommand(name: string, description: string, cmd?: CliCmdSet): void;
-    checkDefault(arg: CliArg, param: CliArgParam): any;
-    checkValue(allParams: any[], param: CliArgParam, value: string): any;
-    advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number;
-    advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number;
-    parseFlags(argv: string[], choices: Obj<CliArg>, start?: number): [CliFinal, string[]];
-    parseCommand(argv: string[]): boolean;
-    parseArguments(argv: string[]): boolean;
-    parse(argv: string[]): boolean;
-    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): CliFunc | null;
-    get context(): CliContext;
-    _createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | null): CliContext;
-    printError(max?: number | null): void;
-    protected formatOptions(options: Obj<CliArg>, prefix?: string): string;
-    protected formatCommands(cmds: Obj<CliCmd>): string;
-    commandUsage(cmd: CliCmd | string): void;
-    usage(): void;
+interface AdvCliContext {
+    _: string[];
+    flags: {
+        [key: string]: any;
+    };
+    errors: any[];
+    options: AdvClioptions;
 }
-export default CliParser;
+interface AdvClioptions {
+    name?: string;
+    description?: string;
+    version?: string;
+    stopFlags?: string | null;
+    inline?: boolean;
+    arguments?: {};
+    commands?: {};
+}
+export declare function parser(argv: string[], options?: AdvClioptions): AdvCliContext;
+export declare function haveErrors(cliObj: AdvCliContext): boolean;
+export declare function printErrors(cliObj: AdvCliContext): void;
+export declare function usage(cliObj: AdvCliContext): void;
+export declare function usageCommand(cliObj: AdvCliContext): void;
+export declare function debug(cliObj: AdvCliContext): void;
+export {};
