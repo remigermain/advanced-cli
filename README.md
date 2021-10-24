@@ -44,7 +44,6 @@ parser.addArgument("debug", {
   description: "Enable debug mode",
 });
 
-
 // add command, the command need to be the first params in argv
 // the "run" command when is set, call function with context( see #context )
 parser.addCommand("run", "Run a command in a new container", {
@@ -59,7 +58,6 @@ parser.addCommand("run", "Run a command in a new container", {
 // the command "search", the command have 2 arguments (only availabe in search  command )
 parser.addCommand("search", "Search the Docker Hub for images", {
   arguments: {
-	  
     // first flags: "local"
     // command have a alias "l" so is can be set like "--local ..." or "-l"
     // the command need 1 arguments with type String, but if not have value, the default is "/home/local"
@@ -73,7 +71,7 @@ parser.addCommand("search", "Search the Docker Hub for images", {
         },
       ],
     },
-    
+
     // second flags: "group"
     // command have not alias so you os is can only setlike "--group"
     // the command need 2 arguments with type String, and boolean"
@@ -102,10 +100,10 @@ parser.addCommand("search", "Search the Docker Hub for images", {
       ],
     },
   },
-  
+
   // if the command "search" is set
   // we call this function at the end of parser with context data (see #context)
-  
+
   call(context) {
     if (context.flags.debug) {
       console.log("rou are in debug mode");
@@ -115,14 +113,11 @@ parser.addCommand("search", "Search the Docker Hub for images", {
 });
 
 const argv = process.argv.slice(2);
-if (parser.parse(argv))
-{
+if (parser.parse(argv)) {
   const { flags, anyArgs } = parser.context;
   // do something
-}
-else
-{
-   parser.printError();
+} else {
+  parser.printError();
 }
 ```
 
@@ -150,6 +145,7 @@ const {flags, anyArgs} = parser.context
 ```
 
 ## Options
+
 various options is available
 
 ```ts
@@ -196,6 +192,7 @@ various options is available
 With previous configuration, the usage output look like this
 
 **Usage**
+
 ```
 Usage: docker [OPTIONS] COMMAND
 
@@ -240,21 +237,59 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 
 ## Errors example
 
-![Screenshot-20211024013118-1034x70](https://user-images.githubusercontent.com/66946113/138574991-2ccb8784-358b-4ab9-aa6a-a6cf01292c2c.png)
+```
+error: Invalid arugments for flag 'config', need 1 arguments.
+docker search --config
+                       ^
+```
 
-![Screenshot-20211024013203-1017x70](https://user-images.githubusercontent.com/66946113/138574982-ae80432f-7fbb-4c9c-98c6-5e3065d5db3f.png)
+```
+error: Invalid arugments for flag 'config', need a valid number.
+docker search --config tre
+                       ^^^
+```
 
-![Screenshot-20211024013652-1149x65](https://user-images.githubusercontent.com/66946113/138574979-26f794cc-5580-4cee-b4e6-215c8b010946.png)
+```
+error: Invalid arugments for flag 'sh', need a valid boolean, choice are 'true' or 'false'
+docker search --sh 44
+                   ^^
+```
 
-**inline mode enable**
-![Screenshot-20211024013829-1022x66](https://user-images.githubusercontent.com/66946113/138574963-cdcdbd93-b56a-4912-b36a-e1d963642970.png)
-![Screenshot-20211024013853-1049x67](https://user-images.githubusercontent.com/66946113/138574965-ae3da46b-87ec-42a3-acef-0183cbe317a4.png)
+```
+error: no such command: 'seade'
+docker seade --config r
+       ^^^^^
+```
+
+```
+error: Invalid arugments for flag 'group', invalid group
+docker search --group hupio
+                      ^^^^^
+```
+
+```
+error: Found argument '--prop' which wasn't expected, or isn't valid in this context.
+docker search --prop
+              ~~^^^^
+```
+
+**with inline mode**
+
+```
+error: Invalid arugments for flag 'group', invalid group
+docker search --group=tu,54
+              ~~~~~~~~^^~~~
+```
+
+```
+error: Invalid arugments for flag 'group', need a valid boolean, choice are 'true' or 'false'
+docker search --group=tu,54
+              ~~~~~~~~~~~^^
+```
 
 ## Benchmarks
 
-Script made by [mri](https://github.com/lukeed/mri)
-
-> nodejs v14.18.0
+Script made by [mri](https://github.com/lukeed/mri), **nodejs v14.18.0**
 
 **inline mode disable**
 
@@ -311,7 +346,6 @@ yargs-parser  x 8,284 ops/sec ±1.08% (89 runs sampled)
 advanced-cli  x 300,114 ops/sec ±0.39% (92 runs sampled)
 Done in 66.32s.
 ```
-
 
 ## License
 

@@ -127,7 +127,7 @@ class CliParser {
     checkDefault(arg: CliArg, param: CliArgParam): any {
         if (param.default !== undefined)
             return param.default
-        throw new Error(`need ${yellow(arg.params.length)} arguments after flag '${yellow(arg.name)}'.`)
+        throw new Error(`need ${yellow(arg.params.length)} arguments.`)
     }
 
     checkValue(allParams: any[], param: CliArgParam, value: string): any {
