@@ -396,9 +396,11 @@ class CliParser {
                 cmd.call(ctx)
             }
             return true
+        } else if (argv[0][0] == '-') {
+            this.errors.push({ text: `first argument '${yellow(argv[0])}' need to be a command, not flags.`, argvi: 0 })
         }
         else {
-            this.errors.push({ text: `no such subcommand: '${yellow(argv[0])}''`, argvi: 0})
+            this.errors.push({ text: `no such command: '${yellow(argv[0])}'`, argvi: 0})
         }
         return false
     }
@@ -427,8 +429,8 @@ class CliParser {
             this.usage()
             return true
         }
-        // check first arguments
-        else if (argv[0][0] !== '-' && !objectIsEmpty(this.commands)) {
+        if (!objectIsEmpty(this.commands)) {
+            // check first arguments
             return this.parseCommand(argv)
         }
         return this.parseArguments(argv)
@@ -623,7 +625,7 @@ class CliParser {
         if (this.options.info) {
             str += this.options.info
         } else {
-            str += `[OPTIONS] ${haveCommand? "COMMAND" : ""}\n\n`
+            str += `${haveCommand? "COMMAND" : ""} [OPTIONS]\n\n`
         }
         str += this.description
         if (haveArguments) {
