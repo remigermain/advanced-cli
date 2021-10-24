@@ -1,6 +1,6 @@
 {
   "name": "advanced-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "a advanced cli arguments parser",
   "license": "MIT",
   "repository": "git@github.com:remigermain/advanced-cli.git",
