@@ -3,7 +3,8 @@
 [![CI](https://github.com/remigermain/advanced-cli/actions/workflows/node.js.yml/badge.svg)](https://github.com/remigermain/advanced-cli/actions/workflows/node.js.yml)
 [![build](https://img.shields.io/npm/v/advanced-cli)](https://www.npmjs.com/package/advanced-cli)
 
-A Cli parser with advanced arguments/command, very fast execution (more than [mri](https://raw.githubusercontent.com/lukeed/mri)), usage and error message formated like docker/cargo cli.
+A Cli parser with advanced arguments/command, very fast execution (more than [mri](https://github.com/lukeed/mri)).
+The parser is inspired by python argsparser, the output is look like docker or cargo(rust lang) cli.
 
 ## Installation
 
@@ -11,7 +12,7 @@ A Cli parser with advanced arguments/command, very fast execution (more than [mr
 yarn add advanced-cli
 ```
 
-# Usage
+# Example
 
 ```js
 const CliParser = require("advanced-cli");
@@ -22,20 +23,30 @@ const options = {
     "To get more help with docker, check out our guides at https://docs.docker.com/go/guides/",
 };
 
+// initialize parser
 const parser = new CliParser(
   "docker",
   "A self-sufficient runtime for containers",
   options
 );
+
+// add global arguments ( is can be used with all commands like --help)
+
+// flag "config" need a number after it like: "--config 42"
 parser.addArgument("config", {
   description: "Location of client config files",
   params: [{ type: Number }],
 });
+
+// flag "debug" need no arguments, so ou can use like "--debug" or "-D"
 parser.addArgument("debug", {
   alias: "D",
   description: "Enable debug mode",
 });
 
+
+// add command, the command need to be the first params in argv
+// the "run" command when is set, call function with context( see #context )
 parser.addCommand("run", "Run a command in a new container", {
   call(context) {
     if (context.flags.debug) {
@@ -45,8 +56,14 @@ parser.addCommand("run", "Run a command in a new container", {
   },
 });
 
+// the command "search", the command have 2 arguments (only availabe in search  command )
 parser.addCommand("search", "Search the Docker Hub for images", {
   arguments: {
+	  
+    // first flags: "local"
+    // command have a alias "l" so is can be set like "--local ..." or "-l"
+    // the command need 1 arguments with type String, but if not have value, the default is "/home/local"
+    // ex:  "--local", "--local otherparams",  "-l", "-l path" all work
     local: {
       alias: "l",
       params: [
@@ -56,6 +73,16 @@ parser.addCommand("search", "Search the Docker Hub for images", {
         },
       ],
     },
+    
+    // second flags: "group"
+    // command have not alias so you os is can only setlike "--group"
+    // the command need 2 arguments with type String, and boolean"
+    // type string need to be validate by a function, first fucntions arguments is the arugmments string,
+    // if you dont throw a error, the arguments is valid, and is set by the return value
+    // the second arguments need boolean, if is not exist is set to "false" by defaul
+    // ex:  "--group" // dont work need first string arguments
+    // "--group user", "--group dev true", "--group root false" // work
+    // "group other" // other match in validator,  "--group dev dev" // invalid boolean
     group: {
       params: [
         {
@@ -75,6 +102,10 @@ parser.addCommand("search", "Search the Docker Hub for images", {
       ],
     },
   },
+  
+  // if the command "search" is set
+  // we call this function at the end of parser with context data (see #context)
+  
   call(context) {
     if (context.flags.debug) {
       console.log("rou are in debug mode");
@@ -84,13 +115,14 @@ parser.addCommand("search", "Search the Docker Hub for images", {
 });
 
 const argv = process.argv.slice(2);
-if (!parser.parse(argv)) {
-  parser.printError();
-} else {
+if (parser.parse(argv))
+{
   const { flags, anyArgs } = parser.context;
-  if (flags.debug) {
-    // do something
-  }
+  // do something
+}
+else
+{
+   parser.printError();
 }
 ```
 
@@ -118,6 +150,7 @@ const {flags, anyArgs} = parser.context
 ```
 
 ## Options
+various options is available
 
 ```ts
 // Parser
@@ -158,10 +191,11 @@ const {flags, anyArgs} = parser.context
 }
 ```
 
-## Usage
+## Ouput
 
 With previous configuration, the usage output look like this
 
+**Usage**
 ```
 Usage: docker [OPTIONS] COMMAND
 
@@ -182,7 +216,7 @@ Commands:
 To get more help with docker, check out our guides at https://docs.docker.com/go/guides/
 ```
 
-#### Usage command
+**Usage command**
 
 ```
 Usage: docker search [OPTIONS]
@@ -204,7 +238,7 @@ Command options:
 To get more help with docker, check out our guides at https://docs.docker.com/go/guides/
 ```
 
-## Errors Exenple
+## Errors example
 
 ![Screenshot-20211024013118-1034x70](https://user-images.githubusercontent.com/66946113/138574991-2ccb8784-358b-4ab9-aa6a-a6cf01292c2c.png)
 
@@ -218,7 +252,7 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 
 ## Benchmarks
 
-Script made by [mri](https://raw.githubusercontent.com/lukeed/mri)
+Script made by [mri](https://github.com/lukeed/mri)
 
 > nodejs v14.18.0
 
@@ -277,3 +311,8 @@ yargs-parser  x 8,284 ops/sec ±1.08% (89 runs sampled)
 advanced-cli  x 300,114 ops/sec ±0.39% (92 runs sampled)
 Done in 66.32s.
 ```
+
+
+## License
+
+[MIT](https://github.com/remigermain/advanced-cli/blob/main/LICENSE)
