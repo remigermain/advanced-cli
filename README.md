@@ -94,6 +94,29 @@ if (!parser.parse(argv)) {
 }
 ```
 
+```js
+const parser = new CliParser(
+  "docker",
+  "A self-sufficient runtime for containers",
+  options
+);
+parser.addArgument("config", {
+  description: "Location of client config files",
+  params: [{ type: Number }, {type:string}, {type:boolean}, {type:string, default: "all"}],
+});
+parser.parse(['hello', '--config', '6', 'user', 'true']
+
+const {flags, anyArgs} = parser.context
+
+# output flags:
+# {config: [6, 'user', true, 'all']}
+
+# anyArgs represant others arguments
+# output anyArgs
+# ['hello']
+
+```
+
 ## Options
 
 ```ts
@@ -118,7 +141,7 @@ if (!parser.parse(argv)) {
 {
     description: string, // a description for your arguments
     alias: string, // a alais
-    params: CliArgParam[], // a list with object arguments
+    params: [ #Params ], // a list with object Params
     call: Function // function, get the context,do the thing , and quit
 }
 
