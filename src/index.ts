@@ -14,7 +14,31 @@ interface AdvClioptions {
     stopFlags?: string | null,
     inline?: boolean,
     arguments?: {},
-    commands?: {}
+    commands?: {},
+    convertValue?: boolean
+}
+
+function isDigit(val: string): [boolean, number] {
+    const num = Number(val)
+    return [!Number.isNaN(num), num]
+}
+
+function isBool(val: string): [boolean, boolean] {
+    const tr = val === "true"
+    const fl = val === "false"
+    return [tr || fl, tr || !fl]
+}
+
+function convVal(val: string): any {
+    const [valid, num] = isDigit(val)
+    if (valid) {
+        return num
+    }
+    const [valid2, bool] = isBool(val)
+    if (valid2) {
+        return bool
+    }
+    return val
 }
 
 function parseMultiArg(cliObj: AdvCliContext, argv: string[], index: number): number {
@@ -25,32 +49,51 @@ function parseSimpleArg(cliObj: AdvCliContext, argv: string[], index: number): n
 }
 
 function parseMultiAll(cliObj: AdvCliContext, argv: string[], index: number, name: string): number {
-    if (!name.length)
+    if (!name.length) {
+        cliObj.errors.push({
+            text: `invalid formating flag`,
+            argv: index
+        })
         return index + 1
+    }
 
-    if (cliObj.options.inline) {
-        const [key, ...other] = optimizedSplit(name, '=')
-        
-        if (!other.length) {
-            cliObj.flags[name] = []
-        }
-        else if (other.length == 1) {
-            cliObj.flags[key] = optimizedSplit(other[0], ',')
-        } else {
-            cliObj.errors.push({
-                text: `invalid formating flag`,
-                argv: index
-            })
+    if (!cliObj.options.inline) {
+        cliObj.flags[name] = []
+        return index + 1
+    }
+
+    const arr = optimizedSplit(name, '=')
+    
+    if (arr.length == 1) {
+        cliObj.flags[name] = []
+    }
+    else if (arr.length == 2) {
+        cliObj.flags[arr[0]] = []
+        const _sp = optimizedSplit(arr[1], ',')
+        for (let j = 0; j < _sp.length; j++) {
+            const val = _sp[j]
+            if (!val) {
+                cliObj.errors.push({
+                    text: `invalid formating flag`,
+                    argv: index,
+                })
+            }
+            cliObj.flags[arr[0]].push(cliObj.options.convertValue ? convVal(val) : val)
         }
     } else {
-        cliObj.flags[name] = []
+        cliObj.errors.push({
+            text: `invalid formating flag`,
+            argv: index,
+            start: 2 + arr[0].length
+        })
     }
     return index + 1
 }
 
 function parseSimpleAll(cliObj: AdvCliContext, argv: string[], index: number): number {
-    for (let i = 1; i < argv[index].length; i++) {
-        const fl = argv[index][i]
+    const val = argv[index]
+    for (let i = 1; i < val.length; i++) {
+        const fl = val[i]
         cliObj.flags[fl] = []
     }
     return index + 1
@@ -64,27 +107,17 @@ export function parser(argv: string[], options: AdvClioptions = {}) {
         flags: {},
         errors: [],
         options: {
-            inline: true,
-            stopFlags: null,
-            ...options
+            stopFlags: options.stopFlags
         },
     }
-    if (!cliObj.options.arguments) {
-        cliObj.options.arguments = {}
-    }
-    if (!cliObj.options.commands) {
-        cliObj.options.commands = {}
-    }
+    cliObj.options.inline = options.inline ?? true
 
-    let parseMulti
-    let parseSimple
-    if (objectIsEmpty(cliObj.options.arguments)) {
-        parseMulti = parseMultiAll
-        parseSimple = parseSimpleAll
-    } else {
-        parseMulti = parseMultiArg
-        parseSimple = parseSimpleArg
-    }
+    cliObj.options.arguments = options.arguments ?? {}
+    cliObj.options.commands = options.commands ?? {}
+
+    const empty = objectIsEmpty(cliObj.options.arguments)
+    const parseMulti = (empty ? parseMultiAll : parseMultiArg)
+    const parseSimple = (empty ? parseSimpleAll : parseSimpleArg)
 
     let i = 0
     while (i < argv.length && argv[i] !== options.stopFlags) {
@@ -123,7 +156,7 @@ export function debug(cliObj: AdvCliContext) {
     console.log(`_: [ ${cliObj._.join(', ')} ]`)
     console.log(`flags: {`)
     Object.keys(cliObj.flags).forEach(k => {
-        console.log(`\t${k}: [ ${cliObj.flags[k].join(', ')} ]`)
+        console.log(`\t${k}:`, cliObj.flags[k])
     })
     console.log(`}`)
     console.log(`errors: [ ${cliObj.errors.join(', ')} ]`)

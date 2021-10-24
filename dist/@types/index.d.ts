@@ -14,6 +14,7 @@ interface AdvClioptions {
     inline?: boolean;
     arguments?: {};
     commands?: {};
+    convertValue?: boolean;
 }
 export declare function parser(argv: string[], options?: AdvClioptions): AdvCliContext;
 export declare function haveErrors(cliObj: AdvCliContext): boolean;

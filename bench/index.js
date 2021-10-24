@@ -35,7 +35,7 @@ benchSmall
 	.add('mri          ', () => mri(small))
 	.add('nopt         ', () => nopt(small))
 	.add('yargs-parser ', () => yargs(small))
-	.add('advanced-cli ', () => AdvCli.parser(small))
+	.add('advanced-cli ', () => AdvCli.parser(small, { convertValue: true }))
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
 
@@ -47,6 +47,6 @@ benchBig
 	.add('mri          ', () => mri(big))
 	.add('nopt         ', () => nopt(big))
 	.add('yargs-parser ', () => yargs(big))
-	.add('advanced-cli ', () => AdvCli.parser(big))
+	.add('advanced-cli ', () => AdvCli.parser(big, { convertValue: true }))
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
