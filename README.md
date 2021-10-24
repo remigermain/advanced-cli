@@ -14,7 +14,7 @@ yarn add advanced-cli
 # Usage
 
 ```js
-const CliParser = require("AdvancedCli");
+const CliParser = require("advanced-cli");
 
 const options = {
   version: "1.0.1",
@@ -205,6 +205,7 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 ```
 
 ## Errors Exenple
+
 ![Screenshot-20211024013118-1034x70](https://user-images.githubusercontent.com/66946113/138574991-2ccb8784-358b-4ab9-aa6a-a6cf01292c2c.png)
 
 ![Screenshot-20211024013203-1017x70](https://user-images.githubusercontent.com/66946113/138574982-ae80432f-7fbb-4c9c-98c6-5e3065d5db3f.png)
