@@ -156,7 +156,7 @@ class CliParser {
                         return false
                     }
                     default: {
-                        throw new Error(`boolean type, choise are '${yellow('true')}' or '${yellow('true')}'`)
+                        throw new Error(`need a valid boolean, choice are '${yellow('true')}' or '${yellow('false')}'`)
                     }
                 }
             }
@@ -178,7 +178,7 @@ class CliParser {
 
         if (_spliter.length != 2) {
             this.errors.push({
-                text: `invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'`,
+                text: `Invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'`,
                 argvi: index,
                 start: 2
             })
@@ -188,7 +188,7 @@ class CliParser {
         const subArgv = optimizedSplit(_spliter[1], ',')
         if (subArgv.length > arg.params.length) {
             this.errors.push({
-                text: `need ${yellow(arg.params.length)} arguments after flag '${yellow(`--${arg.name}`)}'.`,
+                text: `Need ${yellow(arg.params.length)} arguments after flag '${yellow(`--${arg.name}`)}'.`,
                 argvi: index,
                 start: _spliter[0].length + 2,
             })
@@ -208,7 +208,7 @@ class CliParser {
                     allParams.push(this.checkValue(allParams, param, subArgv[i]))
             } catch (e: any) {
                 this.errors.push({
-                    text: `invalid arugments for flag '${yellow(arg.name)}', ${e.message}`,
+                    text: `Invalid arugments for flag '${yellow(arg.name)}', ${e.message}`,
                     argvi: index,
                     start: start,
                     end: (isOverFlow) ? 0 : subArgv[i].length
@@ -254,7 +254,7 @@ class CliParser {
                     allParams.push(this.checkValue(allParams, param, argv[index + i]))
             } catch (e: any) {
                 this.errors.push({
-                    text: `invalid arugments for flag '${yellow(match)}', ${e.message}`,
+                    text: `Invalid arugments for flag '${yellow(match)}', ${e.message}`,
                     argvi: index,
                 })
                 return index
@@ -587,7 +587,7 @@ class CliParser {
         if (typeof cmd === "string") {
             const tcmd = this.commands[cmd]
             if (!tcmd) {
-                throw new Error(`'${cmd}' not found in commands`)
+                throw new Error(`not found '${cmd}' command.`)
             }
             cmd = tcmd
         }
