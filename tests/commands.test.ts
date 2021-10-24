@@ -82,14 +82,11 @@ describe('commands', () => {
     it('command not first but help', () => {
         const p = new CliParserMock("name", "description")
         p.addCommand('init', 'description')
-        console.info = jest.fn()
         const results = p.parse(['--help', 'init'])
 
-        expect(results).toBeTruthy()
+        expect(results).toBeFalsy()
         const errors = p.jestMockErrors()
-        expect(errors.length).toEqual(0)
-
-        expect(console.info).toBeCalled()
+        expect(errors.length).toEqual(1)
     })
     
     it('command unknow', () => {
