@@ -56,6 +56,13 @@ class CliParser {
         // set empty params
         if (!arg.params) {
             arg.params = []
+        } else {
+            // set default type
+            arg.params.forEach(p => {
+                if (p.type === undefined) {
+                    p.type = String
+                }
+            })
         }
 
         const alias = arg.alias
@@ -127,7 +134,6 @@ class CliParser {
         if (param.validator) {
             return param.validator(value, allParams)
         }
-
         switch (param.type) {
             // number type
             case Number: {
@@ -332,7 +338,7 @@ class CliParser {
                     else
                     {
                         this.errors.push({
-                            text: `Found argument '${yellow(`-${value}`)}' which wasn't expected, or isn't valid in this context.`,
+                            text: `Found argument '${yellow(`-${val[i]}`)}' which wasn't expected, or isn't valid in this context.`,
                             argvi: start,
                             start: i,
                             end: 1
@@ -472,7 +478,9 @@ class CliParser {
     printError(max: number | null = null) {
         
         const argv = this.argv
-        const argvLine = argv.join(' ') + "\n"
+
+        const argvLine = this.name + " " + argv.join(' ') + "\n"
+        const pref = this.name.length + 1
 
         let errors = this.errors
         if (max !== null) {
@@ -487,7 +495,7 @@ class CliParser {
 
                 // calcul padding spaces
                 str += argvLine
-                let spaces = err.argvi
+                let spaces = err.argvi + pref
                 for (let i = 0;i < err.argvi; i++) {
                     spaces += argv[i].length
                 }
@@ -514,7 +522,7 @@ class CliParser {
         if (this.errors.length >= 5) {
             str += `total errors: ${red(bold(this.errors.length))}`
         }
-        console.error(str)
+        console.error(str.trim())
     }
 
     // formating
@@ -559,13 +567,13 @@ class CliParser {
         return str
     }
 
-    protected formatCommands(cmds: Obj<CliCmd>): string {
+    protected formatCommands(cmds: Obj<CliCmd>, prefix: string = "Commands:"): string {
         let padding = 0
         for (const key in cmds) {
             padding =  Math.max(padding, key.length)
         }
 
-        let str = "Management Commands:\n"
+        let str = `${prefix}\n`
         for (const key in cmds) {
             str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`
         }
@@ -600,7 +608,7 @@ class CliParser {
         if (this.options.footer) {
             str += `\n\n${this.options.footer}`
         }
-        console.log(str)
+        console.log(str.trim())
     }
 
 
@@ -628,7 +636,7 @@ class CliParser {
         if (this.options.footer) {
             str += `\n\n${this.options.footer}`
         }
-        console.info(str)
+        console.info(str.trim())
     }
 
 

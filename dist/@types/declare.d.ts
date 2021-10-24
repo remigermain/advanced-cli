@@ -16,14 +16,12 @@ export interface CliArg extends CliArgSet {
     params: CliArgParam[];
 }
 export interface CliCmdSet {
-    alias?: string;
     arguments?: Obj<CliArgSet>;
     call?: CliFunc;
 }
 export interface CliCmd extends CliCmdSet {
     name: string;
     description: string;
-    alias?: string;
     arguments: Obj<CliArg>;
     call?: (ctx: CliContext) => void;
 }

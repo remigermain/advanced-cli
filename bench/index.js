@@ -24,43 +24,63 @@ console.time('advanced-cli');
 const advCli = require('../dist/index');
 console.timeEnd('advanced-cli');
 
-console.log('\nBenchmark:');
-const bench = new Suite();
-const args = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world', '--pop', 'youpiii', '--soulapa', 'gooogg', 'poeppd', 'ofoooo', '--poloiepdi', 'doouicll', '-e', '-t', 'i', '-i']
-const args2 = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world']
-const args3 = ['-b', '--bool', '--no-meep', '--multi=baz']
 
-const selec = args3
+const big = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world', '--pop', 'youpiii', '--soulapa', 'gooogg', 'poeppd', 'ofoooo', '--poloiepdi', 'doouicll', '-e', '-t', 'i', '-i']
+const small = ['-b', '--bool', '--no-meep', '--multi=baz']
 
+const inline = false
 
-function fnc() {
-	const parser = new advCli()
-	parser.addArgument('other', { alias: 'b' })
-	parser.addArgument('bool')
-	parser.addArgument('no-meep')
-	parser.addArgument('multi=baz')
-	// 2
-	// parser.addArgument('aa', { alias: 'a' })
+console.log(`\nBenchmark: small: [${small.join(", ")}]`);
+const benchSmall = new Suite()
+benchSmall
+	.add('minimist     ', () => minimist(small))
+	.add('mri (1.1.1)  ', () => previous(small))
+	.add('mri          ', () => mri(small))
+	.add('nopt         ', () => nopt(small))
+	.add('yargs-parser ', () => yargs(small))
+	.add('advanced-cli ', () => {
+		const parser = new advCli("name", "description", { inline })
+		parser.addArgument('other', { alias: 'b' })
+		parser.addArgument('bool')
+		parser.addArgument('no-meep')
+		if (inline) {
+			parser.addArgument('multi', { params: [{ type: String }] })
+		} else {
+			parser.addArgument('multi=bazz')
+		}
+		return parser.parse(small)
+	})
+	.on('cycle', e => console.log(String(e.target)))
+	.run();
 
-	// 3
-	// parser.addArgument('tt', { alias: 'e' })
-	// parser.addArgument('ee', { alias: 't' })
-	// parser.addArgument('rr', { alias: 'i' })
-	// parser.addArgument('pop')
-	// parser.addArgument('soulapa')
-	// parser.addArgument('poloiepdi')
+console.log(`\nBenchmark: big: [${big.join(", ")}]`);
+const benchBig = new Suite()
+benchBig
+	.add('minimist     ', () => minimist(big))
+	.add('mri (1.1.1)  ', () => previous(big))
+	.add('mri          ', () => mri(big))
+	.add('nopt         ', () => nopt(big))
+	.add('yargs-parser ', () => yargs(big))
+	.add('advanced-cli ', () => {
+		const parser = new advCli("name", "description", { inline })
+		parser.addArgument('other', { alias: 'b' })
+		parser.addArgument('bool')
+		parser.addArgument('no-meep')
+		if (inline) {
+			parser.addArgument('multi', { params: [{ type: String }] })
+		} else {
+			parser.addArgument('multi=bazz')
+		}
 
-	return parser.parse(selec)
-}
-console.log(fnc())
+		parser.addArgument('aa', { alias: 'a' })
+		parser.addArgument('tt', { alias: 'e' })
+		parser.addArgument('ee', { alias: 't' })
+		parser.addArgument('rr', { alias: 'i' })
+		parser.addArgument('pop')
+		parser.addArgument('soulapa')
+		parser.addArgument('poloiepdi')
 
-
-bench
-	.add('minimist     ', () => minimist(selec))
-	.add('mri (1.1.1)  ', () => previous(selec))
-	.add('mri          ', () => mri(selec))
-	.add('nopt         ', () => nopt(selec))
-	.add('yargs-parser ', () => yargs(selec))
-	.add('advanced-cli ', fnc)
+		return parser.parse(big)
+	})
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
