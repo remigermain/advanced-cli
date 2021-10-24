@@ -567,13 +567,13 @@ class CliParser {
         return str
     }
 
-    protected formatCommands(cmds: Obj<CliCmd>, prefix: string = "Commands:"): string {
+    protected formatCommands(cmds: Obj<CliCmd>): string {
         let padding = 0
         for (const key in cmds) {
             padding =  Math.max(padding, key.length)
         }
 
-        let str = `${prefix}\n`
+        let str = `Commands:\n`
         for (const key in cmds) {
             str += `  ${key}${" ".repeat(padding - key.length)} ${cmds[key].description}\n`
         }
