@@ -1,10 +1,18 @@
 import { objectIsEmpty, optimizedSplit } from "./utils";
 
+interface AdvCliCommand {
+    arguments: {[key:string]: any}
+}
+
 interface AdvCliContext {
     _: string[],
     flags: {[key:string]:any},
     errors: any[],
-    options: AdvClioptions
+    options: AdvClioptions,
+    cmd?: AdvCliCommand,
+    arguments: {[key:string]: any},
+    commands: { [key: string]: any },
+    argv: string[]
 }
 
 interface AdvClioptions {
@@ -15,7 +23,8 @@ interface AdvClioptions {
     inline?: boolean,
     arguments?: {},
     commands?: {},
-    convertValue?: boolean
+    convertValue?: boolean,
+    anyFlags?: boolean
 }
 
 function isDigit(val: string): [boolean, number] {
@@ -41,28 +50,51 @@ function convVal(val: string): any {
     return val
 }
 
-function parseMultiArg(cliObj: AdvCliContext, argv: string[], index: number): number {
-    return index + 1
+function convType(type: any, val: string): any {
+    if (type === Number) {
+        const [valid, value] = isDigit(val)
+        if (valid)
+            throw new Error('invalid number')
+        return value
+
+    } else if (type === Boolean) {
+        const [valid, value] = isBool(val)
+        if (valid)
+            throw new Error('invalid boolean')
+        return value
+    }
+    return val
 }
-function parseSimpleArg(cliObj: AdvCliContext, argv: string[], index: number): number {
-    return index + 1
+
+function checkArgument(cliObj: AdvCliContext, name: string, index: number): boolean {
+    if (!cliObj.options.anyFlags) {
+        if (cliObj.arguments[name] === undefined && (!cliObj.cmd || cliObj.cmd.arguments[name] === undefined)) {
+            cliObj.errors.push({ text: 'arguments not found', argv: index })
+            return false
+        }
+    }
+    return true
 }
 
 function parseMultiAll(cliObj: AdvCliContext, argv: string[], index: number, name: string): number {
     if (!name.length) {
-        cliObj.errors.push({
-            text: `invalid formating flag`,
-            argv: index
-        })
+        cliObj.errors.push({text: 'invalid formating flag', argv: index})
         return index + 1
     }
 
     if (!cliObj.options.inline) {
-        cliObj.flags[name] = []
+        if (checkArgument(cliObj, name, index)) {
+            cliObj.flags[name] = []
+        }
         return index + 1
     }
 
     const arr = optimizedSplit(name, '=')
+
+    if (!checkArgument(cliObj, arr[0], index)) {
+        return index +1
+    }
+
     
     if (arr.length == 1) {
         cliObj.flags[name] = []
@@ -77,6 +109,7 @@ function parseMultiAll(cliObj: AdvCliContext, argv: string[], index: number, nam
                     text: `invalid formating flag`,
                     argv: index,
                 })
+                continue
             }
             cliObj.flags[arr[0]].push(cliObj.options.convertValue ? convVal(val) : val)
         }
@@ -94,7 +127,9 @@ function parseSimpleAll(cliObj: AdvCliContext, argv: string[], index: number): n
     const val = argv[index]
     for (let i = 1; i < val.length; i++) {
         const fl = val[i]
-        cliObj.flags[fl] = []
+        if (checkArgument(cliObj, fl, index)) {
+            cliObj.flags[fl] = []
+        }
     }
     return index + 1
 }
@@ -107,17 +142,15 @@ export function parser(argv: string[], options: AdvClioptions = {}) {
         flags: {},
         errors: [],
         options: {
-            stopFlags: options.stopFlags
+            inline: options.inline ?? true,
+            stopFlags: options.stopFlags,
+            anyFlags: options.anyFlags ?? false,
+            convertValue: options.convertValue ?? true,
         },
+        arguments: options.arguments ?? {},
+        commands: options.commands ?? {},
+        argv,
     }
-    cliObj.options.inline = options.inline ?? true
-
-    cliObj.options.arguments = options.arguments ?? {}
-    cliObj.options.commands = options.commands ?? {}
-
-    const empty = objectIsEmpty(cliObj.options.arguments)
-    const parseMulti = (empty ? parseMultiAll : parseMultiArg)
-    const parseSimple = (empty ? parseSimpleAll : parseSimpleArg)
 
     let i = 0
     while (i < argv.length && argv[i] !== options.stopFlags) {
@@ -126,9 +159,9 @@ export function parser(argv: string[], options: AdvClioptions = {}) {
         if (ele[0] !== '-') {
             cliObj._.push(argv[i++])
         } else if (ele[1] === '-') {
-            i = parseMulti(cliObj, argv, i, ele.substring(2))
+            i = parseMultiAll(cliObj, argv, i, ele.substring(2))
         } else {
-            i = parseSimple(cliObj, argv, i)
+            i = parseSimpleAll(cliObj, argv, i)
         }
     }
 
@@ -144,6 +177,11 @@ export function haveErrors(cliObj: AdvCliContext): boolean {
 }
 export function printErrors(cliObj: AdvCliContext) {
     console.log("printErrors")
+    cliObj.errors.forEach(v => {
+        console.log(v.text)
+        console.log(cliObj.argv[v.argv])
+    })
+    // console.log(`errors: [ ${cliObj.errors.join(', ')} ]`)
 }
 export function usage(cliObj: AdvCliContext) {
     console.log("usage")

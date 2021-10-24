@@ -1,3 +1,8 @@
+interface AdvCliCommand {
+    arguments: {
+        [key: string]: any;
+    };
+}
 interface AdvCliContext {
     _: string[];
     flags: {
@@ -5,6 +10,14 @@ interface AdvCliContext {
     };
     errors: any[];
     options: AdvClioptions;
+    cmd?: AdvCliCommand;
+    arguments: {
+        [key: string]: any;
+    };
+    commands: {
+        [key: string]: any;
+    };
+    argv: string[];
 }
 interface AdvClioptions {
     name?: string;
@@ -15,6 +28,7 @@ interface AdvClioptions {
     arguments?: {};
     commands?: {};
     convertValue?: boolean;
+    anyFlags?: boolean;
 }
 export declare function parser(argv: string[], options?: AdvClioptions): AdvCliContext;
 export declare function haveErrors(cliObj: AdvCliContext): boolean;

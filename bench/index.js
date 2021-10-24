@@ -1,6 +1,5 @@
 
 const { Suite } = require('benchmark');
-const previous = require('mri');
 
 console.log('Load Times:');
 
@@ -31,11 +30,10 @@ console.log(`\nBenchmark: small: [${small.join(", ")}]`);
 const benchSmall = new Suite()
 benchSmall
 	.add('minimist     ', () => minimist(small))
-	.add('mri (1.1.1)  ', () => previous(small))
 	.add('mri          ', () => mri(small))
 	.add('nopt         ', () => nopt(small))
 	.add('yargs-parser ', () => yargs(small))
-	.add('advanced-cli ', () => AdvCli.parser(small, { convertValue: true }))
+	.add('advanced-cli ', () => AdvCli.parser(small, { convertValue: true, anyFlags: true }))
 	.on('cycle', e => console.log(String(e.target)))
 	.run();
 
@@ -43,10 +41,9 @@ console.log(`\nBenchmark: big: [${big.join(", ")}]`);
 const benchBig = new Suite()
 benchBig
 	.add('minimist     ', () => minimist(big))
-	.add('mri (1.1.1)  ', () => previous(big))
 	.add('mri          ', () => mri(big))
 	.add('nopt         ', () => nopt(big))
 	.add('yargs-parser ', () => yargs(big))
-	.add('advanced-cli ', () => AdvCli.parser(big, { convertValue: true }))
+	.add('advanced-cli ', () => AdvCli.parser(big, { convertValue: true, anyFlags: true }))
 	.on('cycle', e => console.log(String(e.target)))
 	.run();

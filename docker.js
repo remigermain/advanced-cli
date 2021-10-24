@@ -67,7 +67,7 @@ const options = {
 
 
 
-const p = CliAdv.parser(argv)
+const p = CliAdv.parser(argv, options)
 if (CliAdv.haveErrors(p)) {
     CliAdv.printErrors(p)
 } else {
