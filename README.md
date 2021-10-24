@@ -161,7 +161,7 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 
 #### Usage command
 
-```bash
+```
 Usage: docker search [OPTIONS]
 
 Search the Docker Hub for images
@@ -182,8 +182,15 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 ```
 
 ## Errors Exenple
+![Screenshot-20211024013118-1034x70](https://user-images.githubusercontent.com/66946113/138574991-2ccb8784-358b-4ab9-aa6a-a6cf01292c2c.png)
+
+![Screenshot-20211024013203-1017x70](https://user-images.githubusercontent.com/66946113/138574982-ae80432f-7fbb-4c9c-98c6-5e3065d5db3f.png)
+
+![Screenshot-20211024013652-1149x65](https://user-images.githubusercontent.com/66946113/138574979-26f794cc-5580-4cee-b4e6-215c8b010946.png)
 
 **inline mode enable**
+![Screenshot-20211024013829-1022x66](https://user-images.githubusercontent.com/66946113/138574963-cdcdbd93-b56a-4912-b36a-e1d963642970.png)
+![Screenshot-20211024013853-1049x67](https://user-images.githubusercontent.com/66946113/138574965-ae3da46b-87ec-42a3-acef-0183cbe317a4.png)
 
 ## Benchmarks
 
