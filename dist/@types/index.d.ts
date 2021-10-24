@@ -25,7 +25,7 @@ declare class CliParser {
     _createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | null): CliContext;
     printError(max?: number | null): void;
     protected formatOptions(options: Obj<CliArg>, prefix?: string): string;
-    protected formatCommands(cmds: Obj<CliCmd>, prefix?: string): string;
+    protected formatCommands(cmds: Obj<CliCmd>): string;
     commandUsage(cmd: CliCmd | string): void;
     usage(): void;
 }

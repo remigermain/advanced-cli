@@ -1,4 +1,4 @@
-import { red, bold, italic, yellow } from 'picocolors'
+import { red, bold, italic, yellow } from 'colorette'
 
 
 import { objectIsEmpty, optimizedSplit , contains} from './utils'

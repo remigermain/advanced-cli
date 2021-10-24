@@ -1,4 +1,3 @@
-//@ts-nocheck
 import CliParser from "../src"
 
 class CliParserMock extends CliParser {
@@ -9,10 +8,6 @@ class CliParserMock extends CliParser {
 
     jestMockCommands() {
         return this.commands
-    }
-
-    jestMockArgumentsAlias() {
-        return this.argumentsAlias
     }
 
     jestMockErrors() {
