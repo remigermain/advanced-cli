@@ -25,7 +25,7 @@ class CliParser {
 
     protected errors: CliError[] = []
 
-    protected _ctx: CliContext | null = null
+    protected ctx: CliContext | undefined
 
     protected options: CliParserOptions
 
@@ -55,7 +55,7 @@ class CliParser {
         }
     }
 
-    checkArguments(choices: Obj<CliArg>, arg: CliArg) {
+    protected checkArguments(choices: Obj<CliArg>, arg: CliArg) {
 
                 
         if (arg.name in this.arguments) {
@@ -69,16 +69,12 @@ class CliParser {
         // set empty params
         if (!arg.params) {
             arg.params = []
-        } else {
-            // set default type
+        }
+        else {
+            // check type/validator
             arg.params.forEach(p => {
-                const type = p.type !== undefined
-                const validator = p.validator !== undefined
-
-                if (type && validator) {
-                    throw new Error(`arguments '${arg.name}' have 'type' and 'validator' set, you need only once`)
-                } else if (!validator && !type) {
-                    throw new Error(`arguments '${arg.name}' not have 'type' and 'validator' set, you need set once`)
+                if (p.type === undefined) {
+                    throw new Error(`arguments '${arg.name}' not have 'type'`)
                 }
             })
         }
@@ -115,12 +111,14 @@ class CliParser {
 
         if (name in this.commands) {
             throw new Error(`Command '${name}' already set`)
+        } else if (name.length <= 1) {
+            //TODO
+            throw new Error(`Command '${name}' need to be more length`)
         }
 
         // convert
         const tcmd = cmd as CliCmd
 
-        // asign
         tcmd.name = name
         tcmd.description = description
 
@@ -142,14 +140,16 @@ class CliParser {
         this.commands[name] = tcmd
     }
 
-    checkDefault(param: CliArgParam): any {
+    protected checkDefault(param: CliArgParam): any {
         if (param.default !== undefined)
             return param.default
         throw new Error(NEED_ARGUMENT(param.type))
     }
 
-    convertValue(param: CliArgParam, value: string): any {
-        
+    protected convertValue(allParams: any[], param: CliArgParam, value: string): any {
+        if (param.validator) {
+            return param.validator(value, allParams)
+        }
         if (param.type == Number) {
             const num = Number(value)
             if (Number.isNaN(num)) {
@@ -171,23 +171,17 @@ class CliParser {
         return value
     }
 
-    checkValue(allParams: any[], param: CliArgParam, value: string): any {
-        if (param.validator) {
-            return param.validator(value, allParams)
-        }
-        return this.convertValue(param, value)
-    }
-
-    advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number {
+    protected advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number {
         const arg = choices[_spliter[0]]
-
         const allParams : any[] = []
 
+        // addf lag
         cliArgs[arg.name] = allParams
         if (arg.alias) {
             cliArgs[arg.alias] = allParams
         }
 
+        // check key=val,... == [key, val, ....]
         if (_spliter.length != 2) {
             this.addError(INVALID_FORMATING, index, 2)
             return index + 1
@@ -209,7 +203,7 @@ class CliParser {
                 if (isOverFlow)
                     allParams.push(this.checkDefault(param))
                 else
-                    allParams.push(this.checkValue(allParams, param, subArgv[i]))
+                    allParams.push(this.convertValue(allParams, param, subArgv[i]))
             } catch (e: any) {
                 this.addError(INVALID_ARG(arg.name, e.message), index, arrow, (isOverFlow ? 0 : subArgv[i].length))
             } finally {
@@ -221,9 +215,10 @@ class CliParser {
         return index + 1
     }
 
-    advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number {
+    protected advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number {
         const allParams : any[]= []
 
+        // asign flag
         cliArgs[arg.name] = allParams
         if (arg.alias) {
             cliArgs[arg.alias] = allParams
@@ -248,7 +243,7 @@ class CliParser {
                 else if (isOverFlow)
                     allParams.push(this.checkDefault(param))
                 else
-                    allParams.push(this.checkValue(allParams, param, argv[index + i]))
+                    allParams.push(this.convertValue(allParams, param, argv[index + i]))
             } catch (e: any) {
                 this.addError(INVALID_ARG(match, e.message), index)
                 return index
@@ -258,34 +253,30 @@ class CliParser {
         return index + arg.params.length - undef
     }
 
-    parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number) {
-        if (val.length != 2)
-        {
-            const name = val.substring(2)
-            
-            // split for falg key=value,value...
-            const spli = (this.options.inline ? optimizedSplit(name, '=') : [name])
-
-            if (choices[spli[0]] !== undefined)
-            {
-                if (!this.options.inline || spli.length == 1) {
-                    start = this.advFlag(argv, start + 1, flags, choices[name], name)
-                } else {
-                    start = this.advFlagInline(argv, start, choices, flags, spli)
-                }
-            } else {
-                this.addError(INVALID_FLAG(name), start++, 2, val.length - 2)
-            }
-        } else {
-            this.addError(EMPTY_ARG('--'), start++, 2, val.length - 2)
+    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number) {
+        if (val.length == 2) {
+            this.addError(EMPTY_ARG('--'), index, 2, val.length - 2)
+            return index + 1
         }
-        return start
+        const name = val.substring(2)
+        
+        // split for falg key=value,value...
+        const spli = (this.options.inline ? optimizedSplit(name, '=') : [name])
+
+        if (choices[spli[0]] === undefined) {
+            this.addError(INVALID_FLAG(name), index, 2, val.length - 2)
+            return index + 1
+        }
+        if (!this.options.inline || spli.length == 1) {
+            return this.advFlag(argv, index + 1, flags, choices[name], name)
+        }
+        return this.advFlagInline(argv, index, choices, flags, spli)
     }
 
-    parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, start: number) {
+    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number) {
         // simple
 
-        let mem = start
+        let mem = index
 
         for (let i = 1; i <= val.length - 1; i++) {
             const value = choices[val[i]]
@@ -293,52 +284,66 @@ class CliParser {
             if (value !== undefined) {
                 mem = this.advFlag(argv, mem + 1, flags, value, val[i])
             } else {
-                this.addError(INVALID_FLAG(val[i]), start, i, 1)
+                this.addError(INVALID_FLAG(val[i]), index, i, 1)
             }
         }
-        return Math.max(start + 1, mem)
+        return Math.max(index + 1, mem)
 
     }
 
-    parseFlags(argv: string[], choices: Obj<CliArg>, start = 0): [CliFinal, string[]] {
+    protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[]] {
         const flags: CliFinal = {}
         const anyArgs: string[] = []
         
-        while (start < argv.length && argv[start] !== this.options.stopFlags) {
-            const val = argv[start]
+        while (index < argv.length && argv[index] !== this.options.stopFlags) {
+            const val = argv[index]
 
             if (val[0] != '-') {
                 anyArgs.push(val)
-                start++
+                index++
             }
             else if (val[1] == '-') {
-                start = this.parseMulti(flags, argv, val, choices, start)
+                index = this.parseMulti(flags, argv, val, choices, index)
             }
             else if (val.length != 1) {
-                start = this.parseSimple(flags, argv, val, choices, start)
+                index = this.parseSimple(flags, argv, val, choices, index)
             } else {
-                this.addError(EMPTY_ARG('-'), start++)
+                this.addError(EMPTY_ARG('-'), index++)
             }
         }
 
-        if (argv[start] === this.options.stopFlags) {
-            start++
+        if (argv[index] === this.options.stopFlags) {
+            index++
         }
 
         // add all arguments after stopFlag
-        while (start < argv.length) {
-            anyArgs.push(argv[start++])
+        while (index < argv.length) {
+            anyArgs.push(argv[index++])
         }
 
         return [flags, anyArgs]
     }
 
-    parseCommand(argv: string[]): boolean {
-        if (argv[0] in this.commands) {
-            const cmd = this.commands[argv[0]]
-        
+    parse(argv: string[]): boolean {
+        this.argv = argv
+        if (argv.length == 0) {
+            this.usage()
+            return true
+        }
+        // command
+        let args = this.arguments
+        let cmd: CliCmd | undefined
+
+        // replace cmd
+        if (!objectIsEmpty(this.commands)) {
+            if (!(argv[0] in this.commands)) {
+                    this.addError((argv[0][0] == '-' ? CMD_FIRST(argv[0]) : CMD_NOT_FOUND(argv[0])), 0)
+                return false
+            }
+            cmd = this.commands[argv[0]]
+            
             // merge global options with cmd options
-            const args = {...this.arguments, ...cmd.arguments}
+            args = {...args, ...cmd.arguments}
 
             // change usage function to command usage
             if (args.help) {
@@ -348,80 +353,44 @@ class CliParser {
                     }
                 }
             }
+        } 
 
-            //parse options
-            const [flags, anyArgs] = this.parseFlags(argv, args, 1)
+        const [flags, anyArgs] = this.parseFlags(argv, args, cmd ? 1 : 0) // skip first argv command
 
-            const ctx = this._createContext(flags, anyArgs, cmd)
+        const ctx = this.createContext(flags, anyArgs, cmd)
 
-            if (this.errors.length) {
-                return false
-            }
-            const callFalg = this._getCallFlag(flags, args)
-            if (callFalg) {
-                callFalg(ctx)
-            }
-            else if (cmd.call) {
-                cmd.call(ctx)
-            }
-            return true
-        } else {
-            this.addError((argv[0][0] == '-' ? CMD_FIRST(argv[0]) :  CMD_NOT_FOUND(argv[0])), 0)
-        }
-        return false
-    }
-
-    parseArguments(argv: string[]): boolean {
-
-        //parse options
-        const [flags, anyArgs] = this.parseFlags(argv, this.arguments, 0)
-        
-        const ctx = this._createContext(flags, anyArgs,)
-        
         if (this.errors.length) {
             return false
         }
-        
-        const call = this._getCallFlag(flags, this.arguments)
-        if (call) {
-            call(ctx)
+
+        const toCall = this.getCall(flags, args, cmd)
+        if (toCall) {
+            toCall(ctx)
         }
         return true
     }
 
-    parse(argv: string[]): boolean {
-        this.argv = argv
-        if (argv.length == 0) {
-            this.usage()
-            return true
-        }
-        if (!objectIsEmpty(this.commands)) {
-            // check first arguments
-            return this.parseCommand(argv)
-        }
-        return this.parseArguments(argv)
-    }
-
-    _getCallFlag(flags: CliFinal, args: Obj<CliArg>): CliFunc | null {
-
+    protected getCall(flags: CliFinal, args: Obj<CliArg>, cmd: CliCmd | undefined): CliFunc | undefined {
         for (const key in flags) {
-            const call = args[key].call
-            if (call) {
-                return call
+            const toCall = args[key].call
+            if (toCall) {
+                return toCall
             }
         }
-        return null
+        if (cmd && cmd.call) {
+            return cmd.call
+        }
     }
 
     get context(): CliContext {
-        if (!this._ctx) {
+        if (this.ctx === undefined) {
             throw new Error("You need to call 'parse' before access context")
         }
-        return this._ctx
+        return this.ctx
     }
 
-    _createContext(flags: CliFinal, anyArgs: string[], cmd: CliCmd | null = null): CliContext {
-        const ctx: CliContext = {
+    protected createContext(flags: CliFinal, anyArgs: string[], cmd: CliCmd | undefined = undefined): CliContext {
+        this.ctx = {
             flags,
             anyArgs,
             parser: this,
@@ -431,75 +400,57 @@ class CliParser {
             argv: this.argv
         }
         if (cmd) {
-            ctx.cmd = cmd
+            this.ctx.cmd = cmd
         }
-        this._ctx = ctx
-        return ctx
+        return this.ctx
     }
+
 
     //------------------------------------------
     //      utils
     //------------------------------------------
 
-    addError(text: string, argvi: number, start: number | undefined = undefined, end: number | undefined = undefined) {
-        for (let i = 0; i < this.errors.length; i++) {
-            const err = this.errors[i]
-            if (err.argvi === argvi && err.start === start && err.end === end) {
-                err.text.push(text)
-                return
-            }
+    protected addError(text: string, argvi: number, start: number | undefined = undefined, end: number | undefined = undefined) {
+
+        const err = this.errors.find(e => (e.argvi === argvi && e.start === start && e.end === end))
+        if (err) {
+            err.text.push(text)
+        } else {
+            this.errors.push({ text: [text], argvi, start, end })
         }
-        this.errors.push({ text: [text], argvi, start, end })
     }
 
     // format
-
-    printError(max: number | null = null) {
-
-        
-        const argv = this.argv
-
-        const argvLine = this.name + " " + argv.join(' ') + "\n"
-        const pref = this.name.length + 1
-
-        let errors = this.errors
-        if (max !== null) {
-            errors = [...this.errors].splice(0, max)
-        }
+    printError(max: number | undefined = undefined) {
+        const argvLine = `${this.name} ${this.argv.join(' ')}\n`
+        // cut errors with max
+        const errors = (max === undefined ? this.errors : [...this.errors].splice(0, max))
         
         let str = ""
-        
         errors.forEach(err => {
+            // generate errors message, 7 is length of "error: "
             str += `${red(bold('error'))}: ${err.text.join('\n' + ' '.repeat(7))}\n`
             
-            if (err.argvi !== undefined) {
-                
-                // calcul padding spaces
-                str += argvLine
-                let spaces = err.argvi + pref
-                for (let i = 0;i < err.argvi; i++) {
-                    spaces += argv[i].length
-                }
-                
-                str += " ".repeat(spaces)
-                
-                // generate arrow
-                const len = argv[err.argvi]?.length || 1
-                if (err.start === undefined) {
-                    err.start = 0
-                }
-                if (err.end === undefined) {
-                    err.end = len - err.start
-                }
-                str += red("~".repeat(err.start)) + red(bold("^".repeat(err.end)))
-                const end = len - (err.start + err.end)
-                if (end > 0) {
-                    str += red("~".repeat(end))
-                }
-                
-                str += '\n'
+            // calcul padding spaces
+            let spaces = err.argvi + this.name.length + 1
+            for (let i = 0;i < err.argvi; i++) {
+                spaces += this.argv[i].length
             }
+            str += `${argvLine}${" ".repeat(spaces)}`
+            
+            // generate arrow
+            const len = this.argv[err.argvi]?.length || 1
+            err.start = err.start ?? 0
+            err.end = err.end ?? len - err.start
+
+            str += red("~".repeat(err.start)) + red(bold("^".repeat(err.end)))
+            const end = len - (err.start + err.end)
+            if (end > 0) {
+                str += red("~".repeat(end))
+            }
+            str += '\n'
         })
+        // add number error
         if (this.errors.length >= 5) {
             const total = this.errors.reduce((c, e) => e.text.length + c, 0)
             str += `total errors: ${red(bold(total))}`
@@ -511,18 +462,19 @@ class CliParser {
     protected formatOptions(options: Obj<CliArg>, prefix = "Options:"): string {
         
         // remove alais from command
-        const nopt: Obj<CliArg> = {}
+        const opts: Obj<CliArg> = {}
         for (const key in options) {
-            nopt[options[key].name] = options[key]
+            opts[options[key].name] = options[key]
         }
         
         const mem: Obj<number> = {}
         
         // calcul padding space
         let padding = 0
-        for (const key in nopt) {
 
-            const opt = nopt[key]
+        for (const key in opts) {
+
+            const opt = opts[key]
             mem[key] = key.length
             if (opt.params && opt.params.length) {
                 // 3 === prefix and sufix "<>" and 1 space
@@ -532,19 +484,16 @@ class CliParser {
         }
 
         let str = prefix + '\n'
+        for (const key in opts) {
+            const opt = opts[key]
 
-        for (const key in nopt) {
-            const opt = nopt[key]
-
-            str += (opt.alias ? `-${opt.alias}, ` : '    ')
-            str += `--${key} `
+            str += `${(opt.alias ? `-${opt.alias}, ` : '    ')}--${key}`
+            
             if (opt.params) {
-                str += opt.params.reduce((s, p) => `${s}<${p.type.name.toLowerCase()}> `, "")
+                str += opt.params.reduce((s, p) => `${s}<${p.type.constructor.name.toLowerCase()}> `, "")
             }
             // space padding 
-            str += " ".repeat(padding - mem[key] + 1)
-            str += opt.description ?? italic("no information.")
-            str += '\n'
+            str += `${" ".repeat(padding - mem[key] + 1)}${opt.description ?? italic("no information.")}\n`
         }
         return str
     }
@@ -575,12 +524,9 @@ class CliParser {
         let str = ""
 
         str += `Usage: ${this.name} ${cmd.name} `
-        if (this.options.info) {
-            str += this.options.info
-        } else {
-            str += `[OPTIONS]\n\n`
-        }
+        str += this.options.info ?? '[OPTIONS]\n\n'
         str += cmd.description
+
         if (this.arguments) {
             str += '\n\n' + this.formatOptions(this.arguments, "Global options:")
         }
@@ -597,21 +543,13 @@ class CliParser {
     usage() {
         let str = ""
 
-        // check if command and arguments exists, is more optimized to use this otherwise Object.key
-        const haveCommand = !objectIsEmpty(this.commands)
-        const haveArguments = !objectIsEmpty(this.arguments)
-
         str += `Usage: ${this.name} `
-        if (this.options.info) {
-            str += this.options.info
-        } else {
-            str += `${haveCommand? "COMMAND" : ""} [OPTIONS]\n\n`
-        }
+        str += this.options.info ?? `${!objectIsEmpty(this.commands)? "COMMAND" : ""} [OPTIONS]\n\n`
         str += this.description
-        if (haveArguments) {
+        if (!objectIsEmpty(this.arguments)) {
             str += '\n\n' + this.formatOptions(this.arguments)
         }
-        if (haveCommand) {
+        if (!objectIsEmpty(this.commands)) {
             str += '\n\n' + this.formatCommands(this.commands)
         }
 

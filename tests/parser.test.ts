@@ -29,6 +29,7 @@ describe('parser', () => {
                     alias: 'p',
                     params: [
                         {
+                            type: Number,
                             validator(value) {
                                 return +value + 1
                             }

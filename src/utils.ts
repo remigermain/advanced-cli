@@ -17,22 +17,28 @@ export function objectLength(obj: object): number {
 }
 
 
-export function optimizedSplit(name: string, c: string): string[] {
+export function optimizedSplit(str: string, pattern: string): string[] {
     const arr: string[] = []
 
-    let start = -1
+    let start = -pattern.length
     let i = 0
-    if (!name) {
+    if (!str) {
         return arr
     }
-    while (i < name.length) {
-        if (name[i] == c) {
-            arr.push(name.substring(start + 1, i))
+    while (i < str.length) {
+        if (str[i] == pattern) {
+            arr.push(str.substring(start + pattern.length, i))
             start = i
+            i += pattern.length
+        } else if (!pattern) {
+            arr.push(str[i++])
+        } else {
+            i++
         }
-        i++
     }
-    arr.push(name.substring(start + 1, name.length))
+    if (pattern) {
+        arr.push(str.substring(start + pattern.length, str.length))
+    }
     return arr
 }
 

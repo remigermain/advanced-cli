@@ -52,9 +52,11 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
+                    type: Number,
                     validator: () => 4242
                 },
                 {
+                    type: Number,
                     validator: () => 101
                 }
                 
@@ -71,12 +73,14 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
+                    type: Number,
                     validator: (value, arr) => {
                         fnc(String(value), [...arr])
                         return 101
                     }
                 },
                 {
+                    type: Number,
                     default: 42,
                     validator: fnc2
                 }
@@ -99,12 +103,14 @@ describe('inline arguments', () => {
         p.addArgument('foo', {
             params: [
                 {
+                    type: Number,
                     validator: (value, arr) => {
                         fnc(String(value), [...arr])
                         return 101
                     }
                 },
                 {
+                    type: Number,
                     validator: (value, arr) => {
                         fnc2(String(value), [...arr])
                         return 4242

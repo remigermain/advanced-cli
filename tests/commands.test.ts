@@ -20,6 +20,14 @@ describe('commands', () => {
             arguments: {}
         })
     })
+
+    it('invalid name', () => {
+        const p = new CliParserMock("name", "description")
+        expect(() => {
+            p.addCommand('i', 'description')
+        }).toThrowError()
+    })
+
     it('duplicate', () => {
         const p = new CliParserMock("name", "description")
         p.addCommand('init', 'description')
@@ -65,7 +73,7 @@ describe('commands', () => {
         const results = p.parse(['init'])
         expect(results).toBeTruthy()
         expect(fn).toBeCalledTimes(1)
-        expect(fn).toBeCalledWith(p.jestMockContext())
+        expect(fn).toBeCalledWith(p.context)
     })
 
     it('command not first', () => {

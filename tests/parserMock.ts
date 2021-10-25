@@ -13,9 +13,6 @@ class CliParserMock extends CliParser {
     jestMockErrors() {
         return this.errors
     }
-    jestMockContext() {
-        return this._ctx
-    }
     jestMockOptions() {
         return this.options
     }

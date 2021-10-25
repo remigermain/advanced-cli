@@ -84,6 +84,7 @@ parser.addCommand("search", "Search the Docker Hub for images", {
     group: {
       params: [
         {
+          type: String,
           validator(value) {
             const choices = ["root", "user", "dev"];
             if (choices.includes(value)) {
@@ -160,10 +161,9 @@ various options is available
 
 // Params
 {
-    type?: Number | Boolean | String, // the arguments type, is convert to it
+    type: Number | Boolean | String, // the arguments type, is convert to it, is required!
     default?: boolean | number | string,// if is not have arguments,it get the default value
     validator?: (value: string, params: any[]) // pass the value in funciton, and do complex validation on it
-    // you need to set type or validator, no both
 }
 
 // Arguments
