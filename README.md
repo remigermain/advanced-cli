@@ -30,7 +30,7 @@ const parser = new CliParser(
   options
 );
 
-// add global arguments ( is can be used with all commands like --help)
+// add global argumesearchnts ( is can be used with all commands like --help)
 
 // flag "config" need a number after it like: "--config 42"
 parser.addArgument("config", {
@@ -187,14 +187,16 @@ various options is available
 }
 ```
 
-## Ouput
+## Usage
 
-With previous configuration, the usage output look like this
+In parser you have `p.usage()` or `p.commandUsage('search')` provide output like bellow, with options `defaultArg: true` the parser add `--help/-h` arguments and if is set, is print `usage` or `commandUsage`
 
-**Usage**
+```js
+// add various command and arugments
+p.usage()
 
-```
-Usage: docker [OPTIONS] COMMAND
+// output
+`Usage: docker [OPTIONS] COMMAND
 
 A self-sufficient runtime for containers
 
@@ -210,13 +212,17 @@ Commands:
   search Search the Docker Hub for images
 
 
-To get more help with docker, check out our guides at https://docs.docker.com/go/guides/
-```
+To get more help with docker, check out our guides at https://docs.docker.com/go/guides/`
 
-**Usage command**
+//----------------
+//    usage command
+//----------------
 
-```
-Usage: docker search [OPTIONS]
+// add various command and arugments
+p.usage()
+
+// output
+`Usage: docker search [OPTIONS]
 
 Search the Docker Hub for images
 
@@ -232,56 +238,59 @@ Command options:
     --group <string> <boolean>  no information.
 
 
-To get more help with docker, check out our guides at https://docs.docker.com/go/guides/
+To get more help with docker, check out our guides at https://docs.docker.com/go/guides/`
 ```
 
-## Errors example
+## Error output
+
+When a flags/command/arguments is invalid the output generate is very helpful.
+_various exemple_
 
 ```
 error: Invalid arugments for flag 'config', need 1 arguments.
 docker search --config
                        ^
-```
 
-```
+--------------------------|
+
 error: Invalid arugments for flag 'config', need a valid number.
 docker search --config tre
                        ^^^
-```
 
-```
+--------------------------|
+
 error: Invalid arugments for flag 'sh', need a valid boolean, choice are 'true' or 'false'
 docker search --sh 44
                    ^^
-```
 
-```
+--------------------------|
+
 error: no such command: 'seade'
 docker seade --config r
        ^^^^^
-```
 
-```
+--------------------------|
+
 error: Invalid arugments for flag 'group', invalid group
 docker search --group hupio
                       ^^^^^
-```
 
-```
+--------------------------|
+
 error: Found argument '--prop' which wasn't expected, or isn't valid in this context.
 docker search --prop
               ~~^^^^
-```
 
-**with inline mode**
+--------------------------|
 
-```
+// With inline mode
+
 error: Invalid arugments for flag 'group', invalid group
 docker search --group=tu,54
               ~~~~~~~~^^~~~
-```
 
-```
+--------------------------|
+
 error: Invalid arugments for flag 'group', need a valid boolean, choice are 'true' or 'false'
 docker search --group=tu,54
               ~~~~~~~~~~~^^
@@ -289,11 +298,14 @@ docker search --group=tu,54
 
 ## Benchmarks
 
-Script made by [mri](https://github.com/lukeed/mri), **nodejs v14.18.0**
-
-**inline mode disable**
+Benchmarks script made by [mri](https://github.com/lukeed/mri), run various cli/argsparser
 
 ```
+##  nodejs v14.18.0
+
+/---------------
+/  inline mode disabe
+/---------------
 nopt: 2.163ms
 yargs-parser: 4.11ms
 minimist: 0.722ms
@@ -301,47 +313,36 @@ mri: 1.827ms
 advanced-cli: 2.469ms
 
 Benchmark: small: [-b, --bool, --no-meep, --multi=baz]
-minimist      x 214,159 ops/sec ±2.52% (88 runs sampled)
+advanced-cli  x 1,009,619 ops/sec ±0.62% (94 runs sampled)
 mri           x 802,334 ops/sec ±0.46% (91 runs sampled)
 nopt          x 539,295 ops/sec ±0.43% (90 runs sampled)
+minimist      x 214,159 ops/sec ±2.52% (88 runs sampled)
 yargs-parser  x 24,081 ops/sec ±1.06% (89 runs sampled)
-advanced-cli  x 1,009,619 ops/sec ±0.62% (94 runs sampled)
 
 Benchmark: big: [-b, --bool, --no-meep, --multi=baz, -a, hellow, world, --pop, youpiii, --soulapa, gooogg, poeppd, ofoooo, --poloiepdi, doouicll, -e, -t, i, -i]
-minimist      x 88,641 ops/sec ±0.37% (92 runs sampled)
+advanced-cli  x 387,050 ops/sec ±0.76% (87 runs sampled)
 mri           x 310,990 ops/sec ±0.31% (90 runs sampled)
 nopt          x 258,311 ops/sec ±0.60% (89 runs sampled)
+minimist      x 88,641 ops/sec ±0.37% (92 runs sampled)
 yargs-parser  x 8,319 ops/sec ±1.56% (85 runs sampled)
-advanced-cli  x 387,050 ops/sec ±0.76% (87 runs sampled)
-Done in 55.78s.
-```
 
-**inline mode enable**
-
-```
-Load Times:
-nopt: 2.443ms
-yargs-parser: 4.62ms
-minimist: 2.014ms
-mri: 1.918ms
-advanced-cli: 2.586ms
+/---------------
+/  inline mode enable
+/---------------
 
 Benchmark: small: [-b, --bool, --no-meep, --multi=baz]
-minimist      x 213,273 ops/sec ±2.39% (89 runs sampled)
-mri (1.1.1)   x 827,837 ops/sec ±0.25% (87 runs sampled)
 mri           x 833,752 ops/sec ±0.26% (93 runs sampled)
-nopt          x 540,303 ops/sec ±0.25% (93 runs sampled)
-yargs-parser  x 23,048 ops/sec ±2.55% (86 runs sampled)
 advanced-cli  x 699,021 ops/sec ±0.25% (94 runs sampled)
+nopt          x 540,303 ops/sec ±0.25% (93 runs sampled)
+minimist      x 213,273 ops/sec ±2.39% (89 runs sampled)
+yargs-parser  x 23,048 ops/sec ±2.55% (86 runs sampled)
 
 Benchmark: big: [-b, --bool, --no-meep, --multi=baz, -a, hellow, world, --pop, youpiii, --soulapa, gooogg, poeppd, ofoooo, --poloiepdi, doouicll, -e, -t, i, -i]
-minimist      x 89,358 ops/sec ±0.38% (92 runs sampled)
-mri (1.1.1)   x 312,792 ops/sec ±0.21% (94 runs sampled)
 mri           x 315,247 ops/sec ±0.30% (95 runs sampled)
-nopt          x 260,410 ops/sec ±0.29% (92 runs sampled)
-yargs-parser  x 8,284 ops/sec ±1.08% (89 runs sampled)
 advanced-cli  x 300,114 ops/sec ±0.39% (92 runs sampled)
-Done in 66.32s.
+nopt          x 260,410 ops/sec ±0.29% (92 runs sampled)
+minimist      x 89,358 ops/sec ±0.38% (92 runs sampled)
+yargs-parser  x 8,284 ops/sec ±1.08% (89 runs sampled)
 ```
 
 ## License
