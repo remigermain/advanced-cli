@@ -219,7 +219,7 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 //----------------
 
 // add various command and arugments
-p.usage()
+p.commandUsage('search')
 
 // output
 `Usage: docker search [OPTIONS]
