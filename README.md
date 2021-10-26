@@ -23,29 +23,36 @@ const options = {
     "To get more help with docker, check out our guides at https://docs.docker.com/go/guides/",
 };
 
-// initialize parser
+/*
+	initialize parser
+*/
 const parser = new CliParser(
   "docker",
   "A self-sufficient runtime for containers",
   options
 );
 
-// add global argumesearchnts ( is can be used with all commands like --help)
-
-// flag "config" need a number after it like: "--config 42"
+/*
+	add global arguments ( is can be used with all commands like --help)
+	flag `config` need a number after it like: "--config 42"
+*/
 parser.addArgument("config", {
   description: "Location of client config files",
   params: [{ type: Number }],
 });
 
-// flag "debug" need no arguments, so ou can use like "--debug" or "-D"
+/*
+	flag `debug` need no arguments, so ou can use like `--debug` or `-D`
+*/
 parser.addArgument("debug", {
   alias: "D",
   description: "Enable debug mode",
 });
 
-// add command, the command need to be the first params in argv
-// the "run" command when is set, call function with context( see #context )
+/*
+	add command, the command need to be the first params in argv
+	the `run` command if is set, the `call` function is called, you put all your thing in
+*/
 parser.addCommand("run", "Run a command in a new container", {
   call(context) {
     if (context.flags.debug) {
@@ -55,13 +62,17 @@ parser.addCommand("run", "Run a command in a new container", {
   },
 });
 
-// the command "search", the command have 2 arguments (only availabe in search  command )
+/*
+	the command `search`, the command have 2 arguments (only availabe in `search`  command )
+*/
 parser.addCommand("search", "Search the Docker Hub for images", {
   arguments: {
-    // first flags: "local"
-    // command have a alias "l" so is can be set like "--local ..." or "-l"
-    // the command need 1 arguments with type String, but if not have value, the default is "/home/local"
-    // ex:  "--local", "--local otherparams",  "-l", "-l path" all work
+    /*
+	first flags: `local`
+	command have a alias `l` so is can be set like `--local` or `-l`
+	the command need 1 arguments with type `String`, but if not have value, the default is `/home/local`
+	ex:  `--local`, `--local otherparams`,  `-l`, `-l path` all work
+    */
     local: {
       alias: "l",
       params: [
@@ -72,15 +83,24 @@ parser.addCommand("search", "Search the Docker Hub for images", {
       ],
     },
 
-    // second flags: "group"
-    // command have not alias so you os is can only setlike "--group"
-    // the command need 2 arguments with type String, and boolean"
-    // type string need to be validate by a function, first fucntions arguments is the arugmments string,
-    // if you dont throw a error, the arguments is valid, and is set by the return value
-    // the second arguments need boolean, if is not exist is set to "false" by defaul
-    // ex:  "--group" // dont work need first string arguments
-    // "--group user", "--group dev true", "--group root false" // work
-    // "group other" // other match in validator,  "--group dev dev" // invalid boolean
+/*
+    second flags: `group`
+    command have not alias so you os is can only set like `--group`
+    the command need 2 arguments with type `String`, and `boolean`
+    type string need to be validate by a function, first fucntions arguments is the arugmments string,
+    if you dont throw a error, the arguments is valid, and is set by the return value
+    the second arguments need boolean, if is not exist is set to `false` by default
+    ex: 	
+    		BAD:
+    		`--group`		dont work need first string arguments
+    		`--group other`	the  `other` not match in validator
+		`--group dev dev`	have a invalid `boolean`
+		
+    		OK:
+    	 	`--group user`
+		`--group dev true`
+		`--group root false`
+*/
     group: {
       params: [
         {
@@ -88,7 +108,7 @@ parser.addCommand("search", "Search the Docker Hub for images", {
           validator(value) {
             const choices = ["root", "user", "dev"];
             if (choices.includes(value)) {
-              return "all";
+              return value;
             }
             throw new Error("invalid group");
           },
@@ -101,26 +121,25 @@ parser.addCommand("search", "Search the Docker Hub for images", {
     },
   },
 
-  // if the command "search" is set
-  // we call this function at the end of parser with context data (see #context)
-
+  /*
+  	if the command `search` is set
+  	we call this function at the end of parser with context data (see #context)
+  */
   call(context) {
     if (context.flags.debug) {
       console.log("rou are in debug mode");
     }
-    // do something
+   ...
   },
 });
 
-const argv = process.argv.slice(2);
-if (parser.parse(argv)) {
-  const { flags, anyArgs } = parser.context;
-  // do something
-} else {
-  parser.printError();
+const argv = process.argv.slice(2)
+if (!parser.parse(argv)) {
+  parser.printError()
 }
 ```
 
+if you dont want to use `call` attribute in command or flags, you can do this
 ```js
 const parser = new CliParser(
   "docker",
@@ -131,17 +150,21 @@ parser.addArgument("config", {
   description: "Location of client config files",
   params: [{ type: Number }, {type:string}, {type:boolean}, {type:string, default: "all"}],
 });
-parser.parse(['hello', '--config', '6', 'user', 'true']
+if (parser.parse(['hello', '--config', '6', 'user', 'true']) {
+  const {flags, anyArgs, cmd} = parser.context
 
-const {flags, anyArgs} = parser.context
+/*
+	flags output:
+	{config: [6, 'user', true, 'all']}
 
-# output flags:
-# {config: [6, 'user', true, 'all']}
+	anyArgs represant others arguments
+	output anyArgs:
+	['hello']
+*/
 
-# anyArgs represant others arguments
-# output anyArgs
-# ['hello']
-
+} else {
+  parser.printError()
+}
 ```
 
 ## Options
@@ -149,41 +172,45 @@ const {flags, anyArgs} = parser.context
 various options is available
 
 ```ts
-// Parser
+/*	Parser		*/
 {
-    info: string, // your information for use your programm
-    footer: string, // display a footer message when usage is call
-    version: string, // you version of your app
-    stopFlags: "--" | ";" | null // stop parsing flag , default null
-  	inline: false, // add posibility the flags are format like this  --foo=bar,booz,bo
-    // inline mdoe have a big execution cost ( cause need to split )
+    info: string,				//	your information for use your programm
+    footer: string,				//	display a footer message when usage is call
+    version: string,				//	you version of your app
+    stopFlags: "--" | ";" | undefined	//	stop parsing flag , default null
+    inline: false,				//	add posibility the flags are format like this  --foo=bar,booz,bo
+    						//	inline mdoe have a big execution cost ( cause need to split )
 }
 
-// Params
+/*	Arguments		*/
 {
-    type: Number | Boolean | String, // the arguments type, is convert to it, is required!
-    default?: boolean | number | string,// if is not have arguments,it get the default value
-    validator?: (value: string, params: any[]) // pass the value in funciton, and do complex validation on it
+    description: string,	//	a description for your arguments
+    alias: string,		//	a alais
+    params: [ #Params ],	//	a list with object Params
+    call: Function		//	function, get the context,do the thing , and quit
 }
 
-// Arguments
+/*	Params		*/
 {
-    description: string, // a description for your arguments
-    alias: string, // a alais
-    params: [ #Params ], // a list with object Params
-    call: Function // function, get the context,do the thing , and quit
+    type: Number | Boolean | String, 		// 	the arguments type, is convert to it, is required!
+    default?: boolean | number | string,  	//	if is not have arguments,it get the default value
+    validator?: (value: string, params: any[])  //	pass the value in funciton, and do complex validation on it
 }
 
-// Command
+/*	Command		*/
 {
 	arguments: {
-		// name is your flags name like 'help'
+		/*
+			object with key is ne name of your falgs
+			and argument is the options for your flags
+		*/
+		
 		name: {
 			#Arguments
 		},
 		...
 	}
-    call?: (context) // function, get the context,do the thing , and quit
+    call?: (context) // function with cli context (flags,anyargs, cmd ..ect )
 }
 ```
 
@@ -192,10 +219,10 @@ various options is available
 In parser you have `p.usage()` or `p.commandUsage('search')` provide output like bellow, with options `defaultArg: true` the parser add `--help/-h` arguments and if is set, is print `usage` or `commandUsage`
 
 ```js
-// add various command and arugments
-p.usage()
+/*
+	with example above the usage output look this
+*/
 
-// output
 `Usage: docker [OPTIONS] COMMAND
 
 A self-sufficient runtime for containers
@@ -214,14 +241,11 @@ Commands:
 
 To get more help with docker, check out our guides at https://docs.docker.com/go/guides/`
 
-//----------------
-//    usage command
-//----------------
+/*
+	command usage
+*/
 
-// add various command and arugments
-p.commandUsage('search')
 
-// output
 `Usage: docker search [OPTIONS]
 
 Search the Docker Hub for images
@@ -244,7 +268,6 @@ To get more help with docker, check out our guides at https://docs.docker.com/go
 ## Error output
 
 When a flags/command/arguments is invalid the output generate is very helpful.
-_various exemple_
 
 ```
 error: Invalid arugments for flag 'config', need 1 arguments.
