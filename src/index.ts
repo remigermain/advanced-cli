@@ -240,7 +240,8 @@ class CliParser {
 
             const param = arg.params[i]
             const isOverFlow = (index + i) >= argv.length
-            const isFlag = !isOverFlow && argv[index + i][0] === '-' || false
+            // check arguments is not flag (start with '-') and type is not number (cause '-' for negative value)
+            const isFlag = !isOverFlow && param.type !== Number && argv[index + i][0] === '-' || false
 
             try {
                 if (isFlag) {

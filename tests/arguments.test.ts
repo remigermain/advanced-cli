@@ -117,6 +117,12 @@ describe('arguments', () => {
         }).toThrowError()
     })
 
+    test('type invalid number', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
+        expect(p.parse(['-r', 'true'])).toBeFalsy()
+        expect(p.jestMockErrorsLength()).toEqual(1)
+    })
     test('type invalid boolean', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
@@ -128,6 +134,33 @@ describe('arguments', () => {
         p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
         expect(p.parse(['-r', 'invalidate'])).toBeFalsy()
         expect(p.jestMockErrorsLength()).toEqual(1)
+    })
+
+    describe('type valid number', () => {
+        it('positive', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
+            expect(p.parse(['-r', '44'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([44])
+        })
+        it('negative', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
+            expect(p.parse(['-r', '-44'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([-44])
+        })
+        it('float', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
+            expect(p.parse(['-r', '44.590'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([44.590])
+        })
+        it('negative float', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
+            expect(p.parse(['-r', '-44.590'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([-44.590])
+        })
     })
 
     describe('type valid boolean', () => {
