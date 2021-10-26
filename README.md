@@ -5,7 +5,7 @@
 
 A Cli parser with advanced arguments/command, very fast execution (more than [mri](https://github.com/lukeed/mri)).
 The parser is inspired by python argsparser, the output is look like docker or cargo(rust lang) cli.
-You can add arguments, command, command arguments, efficiency errors, very fast, chained alias ( ex: -lah ), inline arguments (ex: --foo=bar,boo,baz)
+You can add arguments, command, command arguments, efficiency errors, very fast, chained alias ( ex: `-lah` ), inline arguments (ex: `--foo=bar,boo,baz`)
 
 ## Installation
 
