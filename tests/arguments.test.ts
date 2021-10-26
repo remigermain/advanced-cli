@@ -117,12 +117,46 @@ describe('arguments', () => {
         }).toThrowError()
     })
 
+    test('type invalid boolean', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
+        expect(p.parse(['-r', '1'])).toBeFalsy()
+        expect(p.jestMockErrorsLength()).toEqual(1)
+    })
     test('type invalid date', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
         expect(p.parse(['-r', 'invalidate'])).toBeFalsy()
         expect(p.jestMockErrorsLength()).toEqual(1)
     })
+
+    describe('type valid boolean', () => {
+        it('positive', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
+            expect(p.parse(['-r', 'true'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([true])
+        })
+        it('negative', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
+            expect(p.parse(['-r', 'yes'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([true])
+        })
+        it('float', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
+            expect(p.parse(['-r', 'false'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([false])
+        })
+        it('negative float', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
+            expect(p.parse(['-r', 'no'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([false])
+        })
+    })
+
     describe('type valid date', () => {
         it('year', () => {
             const p = new CliParserMock("name", "description", { defaultArg: false })
