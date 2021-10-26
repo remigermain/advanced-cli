@@ -1,7 +1,9 @@
 import CliParser from './index';
+export declare type CliArgType = NumberConstructor | StringConstructor | BooleanConstructor | DateConstructor;
+export declare type CliArgTypeValue = number | string | boolean | Date;
 export interface CliArgParam {
-    type: NumberConstructor | StringConstructor | BooleanConstructor;
-    default?: boolean | number | string;
+    type: CliArgType;
+    default?: CliArgTypeValue;
     validator?: (value: string, params: any[]) => any;
 }
 export declare type CliFunc = (ctx: CliContext) => void;

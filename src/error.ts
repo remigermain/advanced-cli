@@ -1,6 +1,8 @@
 
 import { italic, yellow } from 'colorette'
 
+import { CliArgType } from './declare'
+
 export const INVALID_FLAG = (flag: string) => `Found argument '${yellow(`-${flag}`)}' which wasn't expected, or isn't valid in this context.`
 
 export const EMPTY_ARG = (t: string) => `Empty argument '${yellow(t)}' which wasn't expected.`
@@ -15,8 +17,10 @@ export const INVALID_LENGTH_ARG = (name: string, length: number | string) => `Ne
 
 export const INVALID_FORMATING = `Invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'`
 
-export const NEED_ARGUMENT = (type: NumberConstructor | BooleanConstructor | StringConstructor) => `need '${yellow(type.constructor.name.toLowerCase())}' arguments.`
+export const NEED_ARGUMENT = (type: CliArgType) => `need '${yellow(type.constructor.name.toLowerCase())}' arguments.`
 
-export const INVALID_BOOL = `need a valid boolean, choice are '${yellow('true')}' or '${yellow('false')}'`
+export const INVALID_BOOL = `need a valid boolean, choice are '${italic(yellow('true'))}' or '${italic(yellow('false'))}'`
 
-export const INVALID_NUMBER = `need a valid ${italic(yellow('number'))}.`
+export const INVALID_NUMBER = `need a valid '${italic(yellow('number'))}'.`
+
+export const INVALID_DATE = `need a valid '${italic(yellow('date'))}'`

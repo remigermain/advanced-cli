@@ -1,9 +1,12 @@
 import CliParser from './index'
 
+
+export type CliArgType = NumberConstructor | StringConstructor | BooleanConstructor | DateConstructor
+export type CliArgTypeValue = number | string | boolean | Date
 // object for defined arguments after flags
 export interface CliArgParam {
-    type: NumberConstructor | StringConstructor | BooleanConstructor
-    default?: boolean | number | string,
+    type: CliArgType,
+    default?: CliArgTypeValue,
     validator?: (value: string, params: any[]) => any
 }
 
@@ -34,7 +37,7 @@ export interface CliArg extends CliArgSet {
 
 // user
 export interface CliCmdSet {
-    arguments?:  Obj<CliArgSet>,
+    arguments?: Obj<CliArgSet>,
     call?: CliFunc
 }
 
@@ -83,5 +86,5 @@ export interface CliContext {
 export type CliFinal = Obj<any>
 
 export interface Obj<Type> {
-    [key:string]: Type
+    [key: string]: Type
 }

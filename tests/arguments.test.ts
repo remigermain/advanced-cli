@@ -116,4 +116,32 @@ describe('arguments', () => {
             p.addArgument('root', { alias: 'r', params: [{ validator() { } }] })
         }).toThrowError()
     })
+
+    test('type invalid date', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+        p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
+        expect(p.parse(['-r', 'invalidate'])).toBeFalsy()
+        expect(p.jestMockErrorsLength()).toEqual(1)
+    })
+    describe('type valid date', () => {
+        it('year', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
+            expect(p.parse(['-r', '2021'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([new Date('2021')])
+        })
+        it('month day', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
+            expect(p.parse(['-r', '2021-01-04'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([new Date('2021-01-04')])
+        })
+        it('hour', () => {
+            const p = new CliParserMock("name", "description", { defaultArg: false })
+            p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
+            expect(p.parse(['-r', '2021-10-26T09:58:03.379Z'])).toBeTruthy()
+            expect(p.context.flags.root).toEqual([new Date('2021-10-26T09:58:03.379Z')])
+        })
+    })
+
 })

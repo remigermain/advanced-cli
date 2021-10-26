@@ -167,6 +167,12 @@ class CliParser {
                 default:
                     throw new Error(INVALID_BOOL)
             }
+        } else if (param.type == Date) {
+            const date = new Date(value)
+            if (isNaN(date.getTime())) {
+                throw new Error(INVALID_DATE)
+            }
+            return date
         }
         return value
     }

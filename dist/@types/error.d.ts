@@ -1,3 +1,4 @@
+import { CliArgType } from './declare';
 export declare const INVALID_FLAG: (flag: string) => string;
 export declare const EMPTY_ARG: (t: string) => string;
 export declare const CMD_NOT_FOUND: (cmd: string) => string;
@@ -5,6 +6,7 @@ export declare const CMD_FIRST: (cmd: string) => string;
 export declare const INVALID_ARG: (name: string, msg: string) => string;
 export declare const INVALID_LENGTH_ARG: (name: string, length: number | string) => string;
 export declare const INVALID_FORMATING: string;
-export declare const NEED_ARGUMENT: (type: NumberConstructor | BooleanConstructor | StringConstructor) => string;
+export declare const NEED_ARGUMENT: (type: CliArgType) => string;
 export declare const INVALID_BOOL: string;
 export declare const INVALID_NUMBER: string;
+export declare const INVALID_DATE: string;
