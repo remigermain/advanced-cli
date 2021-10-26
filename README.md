@@ -175,27 +175,27 @@ various options is available
 ```ts
 /*	Parser		*/
 {
-    info: string,				//	your information for use your programm
-    footer: string,				//	display a footer message when usage is call
-    version: string,				//	you version of your app
+    info: string,				//	your usage of your programm ( used when `usage()` is call)
+    footer: string,				//	display a footer message ( used when `usage()` is call)
+    version: string,				//	you version of your app ( used when `--version` or `-v` is set)
     stopFlags: "--" | ";" | undefined	//	stop parsing flag , default null
-    inline: false,				//	add posibility the flags are format like this  --foo=bar,booz,bo
+    inline: false,				//	add posibility the flags are format like this  `--foo=bar,booz,bo`
     						//	inline mdoe have a big execution cost ( cause need to split )
 }
 
 /*	Arguments		*/
 {
     description: string,	//	a description for your arguments
-    alias: string,		//	a alais
+    alias: string,		//	a alias (ex: `h` for `help`)
     params: [ #Params ],	//	a list with object Params
-    call: Function		//	function, get the context,do the thing , and quit
+    call: Function		//	function is calling if arguments is set (like `--help` is print usage and exit)
 }
 
 /*	Params		*/
 {
     type: Number | Boolean | String, 		// 	the arguments type, is convert to it, is required!
-    default?: boolean | number | string,  	//	if is not have arguments,it get the default value
-    validator?: (value: string, params: any[])  //	pass the value in funciton, and do complex validation on it
+    default: boolean | number | string,  	//	if arguments are not available, it get the default value
+    validator: (value: string, params: any[])  //	pass the value in funciton, and do complex validation on it, the params is liste with previous value of old arguments
 }
 
 /*	Command		*/
@@ -211,7 +211,7 @@ various options is available
 		},
 		...
 	}
-    call?: (context) // function with cli context (flags,anyargs, cmd ..ect )
+    call?: Fucntion // function is calling if command is set
 }
 ```
 
