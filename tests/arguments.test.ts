@@ -1,5 +1,5 @@
 import CliParserMock from "./parserMock"
-import {objectLength} from "../src/utils"
+import { objectLength } from "../src/utils"
 
 describe('arguments', () => {
     describe('throw error', () => {
@@ -12,22 +12,22 @@ describe('arguments', () => {
         })
         it('duplicate alias', () => {
             const p = new CliParserMock("name", "description")
-            p.addArgument('root', {alias: 'r'})
+            p.addArgument('root', { alias: 'r' })
             expect(() => {
-                p.addArgument('other', {alias: 'r'})
+                p.addArgument('other', { alias: 'r' })
             }).toThrowError()
         })
         it('alias not well formated', () => {
             const p = new CliParserMock("name", "description")
             expect(() => {
-                p.addArgument('other', {alias: 'root'})
+                p.addArgument('other', { alias: 'root' })
             }).toThrowError()
         })
     })
     describe('well arguments', () => {
         it('multiple', () => {
             const fnc = () => { console.log('yop') }
-            const p = new CliParserMock("name", "description",  {defaultArg: false})
+            const p = new CliParserMock("name", "description", { defaultArg: false })
             p.addArgument('root', { alias: 'r', description: 'my-description' })
             p.addArgument('gulp', { alias: 'g', description: 'my-other-description', call: fnc })
             const args = p.jestMockArguments()
@@ -53,7 +53,7 @@ describe('arguments', () => {
         })
         it('no alias', () => {
             const fnc = () => { console.log('yop') }
-            const p = new CliParserMock("name", "description", {defaultArg: false})
+            const p = new CliParserMock("name", "description", { defaultArg: false })
             p.addArgument('root', { description: 'my-description' })
             const args = p.jestMockArguments()
             expect(objectLength(args)).toEqual(1)
@@ -96,7 +96,7 @@ describe('arguments', () => {
 
     test('validator and type set', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
-        p.addArgument('root', { alias: 'r', params: [{type: Boolean, validator() {}}] })
+        p.addArgument('root', { alias: 'r', params: [{ type: Boolean, validator() { } }] })
     })
     test('validator and type not set', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
@@ -107,7 +107,7 @@ describe('arguments', () => {
     })
     test('type set', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
-        p.addArgument('root', { alias: 'r', params: [{type:String}] })
+        p.addArgument('root', { alias: 'r', params: [{ type: String }] })
     })
     test('validator set no type', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
