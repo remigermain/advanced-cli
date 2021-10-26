@@ -24,6 +24,11 @@ const advCli = require('../dist/index');
 console.timeEnd('advanced-cli');
 
 
+console.time('advanced-cli-esbuild');
+const advCliEs = require('../ff/index').default;
+console.timeEnd('advanced-cli-esbuild');
+
+
 const big = ['-b', '--bool', '--no-meep', '--multi=baz', '-a', 'hellow', 'world', '--pop', 'youpiii', '--soulapa', 'gooogg', 'poeppd', 'ofoooo', '--poloiepdi', 'doouicll', '-e', '-t', 'i', '-i']
 const small = ['-b', '--bool', '--no-meep', '--multi=baz']
 
@@ -32,12 +37,24 @@ const inline = false
 console.log(`\nBenchmark: small: [${small.join(", ")}]`);
 const benchSmall = new Suite()
 benchSmall
-	.add('minimist     ', () => minimist(small))
-	.add('mri          ', () => mri(small))
-	.add('nopt         ', () => nopt(small))
-	.add('yargs-parser ', () => yargs(small))
+	// .add('minimist     ', () => minimist(small))
+	// .add('mri          ', () => mri(small))
+	// .add('nopt         ', () => nopt(small))
+	// .add('yargs-parser ', () => yargs(small))
 	.add('advanced-cli ', () => {
 		const parser = new advCli("name", "description", { inline })
+		parser.addArgument('other', { alias: 'b' })
+		parser.addArgument('bool')
+		parser.addArgument('no-meep')
+		if (inline) {
+			parser.addArgument('multi', { params: [{ type: String }] })
+		} else {
+			parser.addArgument('multi=bazz')
+		}
+		return parser.parse(small)
+	})
+	.add('advanced-cli es ', () => {
+		const parser = new advCliEs("name", "description", { inline })
 		parser.addArgument('other', { alias: 'b' })
 		parser.addArgument('bool')
 		parser.addArgument('no-meep')
@@ -54,12 +71,33 @@ benchSmall
 console.log(`\nBenchmark: big: [${big.join(", ")}]`);
 const benchBig = new Suite()
 benchBig
-	.add('minimist     ', () => minimist(big))
-	.add('mri          ', () => mri(big))
-	.add('nopt         ', () => nopt(big))
-	.add('yargs-parser ', () => yargs(big))
+	// .add('minimist     ', () => minimist(big))
+	// .add('mri          ', () => mri(big))
+	// .add('nopt         ', () => nopt(big))
+	// .add('yargs-parser ', () => yargs(big))
 	.add('advanced-cli ', () => {
 		const parser = new advCli("name", "description", { inline })
+		parser.addArgument('other', { alias: 'b' })
+		parser.addArgument('bool')
+		parser.addArgument('no-meep')
+		if (inline) {
+			parser.addArgument('multi', { params: [{ type: String }] })
+		} else {
+			parser.addArgument('multi=bazz')
+		}
+
+		parser.addArgument('aa', { alias: 'a' })
+		parser.addArgument('tt', { alias: 'e' })
+		parser.addArgument('ee', { alias: 't' })
+		parser.addArgument('rr', { alias: 'i' })
+		parser.addArgument('pop')
+		parser.addArgument('soulapa')
+		parser.addArgument('poloiepdi')
+
+		return parser.parse(big)
+	})
+	.add('advanced-cli es ', () => {
+		const parser = new advCliEs("name", "description", { inline })
 		parser.addArgument('other', { alias: 'b' })
 		parser.addArgument('bool')
 		parser.addArgument('no-meep')

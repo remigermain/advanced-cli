@@ -1,7 +1,7 @@
 import { red, bold, italic, yellow } from 'colorette'
 
 
-import { objectIsEmpty, optimizedSplit , contains} from './utils'
+import { objectIsEmpty, optimizedSplit, contains } from './utils'
 
 import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare"
 
@@ -30,17 +30,17 @@ class CliParser {
     protected options: CliParserOptions
 
     protected argv: string[] = []
-    
+
     constructor(public name: string, public description: string, options: CliParserOptions = {}) {
 
-        this.options = {defaultArg: true, ...options}
+        this.options = { defaultArg: true, ...options }
 
         if (this.options.defaultArg) {
             this.addArgument('help', {
                 alias: 'h',
                 description: 'Prints help information',
                 call({ parser }) {
-                    parser.usage()                
+                    parser.usage()
                 }
             })
             if (this.options.version) {
@@ -57,7 +57,7 @@ class CliParser {
 
     protected checkArguments(choices: Obj<CliArg>, arg: CliArg) {
 
-                
+
         if (arg.name in this.arguments) {
             throw new Error(`duplicate options '${arg.name}'`)
         } else if (arg.name.length < 2) {
@@ -98,10 +98,10 @@ class CliParser {
         // convert to CliArg
         const targ = arg as CliArg
         targ.name = name
-    
+
         // check 
         this.checkArguments(this.arguments, targ)
-        
+
         // add to global
         this.arguments[name] = targ
 
@@ -123,20 +123,20 @@ class CliParser {
         tcmd.description = description
 
         //add global
-        
+
         if (!cmd.arguments) {
             tcmd.arguments = {}
         } else {
             // set empty params
             const args = { ...tcmd.arguments }
-            
+
             for (const key in cmd.arguments) {
                 tcmd.arguments[key].name = key
                 this.checkArguments(args, tcmd.arguments[key])
             }
             tcmd.arguments = args
         }
-        
+
         this.commands[name] = tcmd
     }
 
@@ -173,7 +173,7 @@ class CliParser {
 
     protected advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number {
         const arg = choices[_spliter[0]]
-        const allParams : any[] = []
+        const allParams: any[] = []
 
         // addf lag
         cliArgs[arg.name] = allParams
@@ -216,7 +216,7 @@ class CliParser {
     }
 
     protected advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number {
-        const allParams : any[]= []
+        const allParams: any[] = []
 
         // asign flag
         cliArgs[arg.name] = allParams
@@ -259,7 +259,7 @@ class CliParser {
             return index + 1
         }
         const name = val.substring(2)
-        
+
         // split for falg key=value,value...
         const spli = (this.options.inline ? optimizedSplit(name, '=') : [name])
 
@@ -294,7 +294,7 @@ class CliParser {
     protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[]] {
         const flags: CliFinal = {}
         const anyArgs: string[] = []
-        
+
         while (index < argv.length && argv[index] !== this.options.stopFlags) {
             const val = argv[index]
 
@@ -337,13 +337,13 @@ class CliParser {
         // replace cmd
         if (!objectIsEmpty(this.commands)) {
             if (!(argv[0] in this.commands)) {
-                    this.addError((argv[0][0] == '-' ? CMD_FIRST(argv[0]) : CMD_NOT_FOUND(argv[0])), 0)
+                this.addError((argv[0][0] == '-' ? CMD_FIRST(argv[0]) : CMD_NOT_FOUND(argv[0])), 0)
                 return false
             }
             cmd = this.commands[argv[0]]
-            
+
             // merge global options with cmd options
-            args = {...args, ...cmd.arguments}
+            args = { ...args, ...cmd.arguments }
 
             // change usage function to command usage
             if (args.help) {
@@ -353,7 +353,7 @@ class CliParser {
                     }
                 }
             }
-        } 
+        }
 
         const [flags, anyArgs] = this.parseFlags(argv, args, cmd ? 1 : 0) // skip first argv command
 
@@ -389,7 +389,7 @@ class CliParser {
         return this.ctx
     }
 
-    protected createContext(flags: CliFinal, anyArgs: string[], cmd: CliCmd | undefined = undefined): CliContext {
+    protected createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd): CliContext {
         this.ctx = {
             flags,
             anyArgs,
@@ -410,7 +410,7 @@ class CliParser {
     //      utils
     //------------------------------------------
 
-    protected addError(text: string, argvi: number, start: number | undefined = undefined, end: number | undefined = undefined) {
+    protected addError(text: string, argvi: number, start?: number, end?: number) {
 
         const err = this.errors.find(e => (e.argvi === argvi && e.start === start && e.end === end))
         if (err) {
@@ -421,23 +421,23 @@ class CliParser {
     }
 
     // format
-    printError(max: number | undefined = undefined) {
+    printError(max?: number) {
         const argvLine = `${this.name} ${this.argv.join(' ')}\n`
         // cut errors with max
         const errors = (max === undefined ? this.errors : [...this.errors].splice(0, max))
-        
+
         let str = ""
         errors.forEach(err => {
             // generate errors message, 7 is length of "error: "
             str += `${red(bold('error'))}: ${err.text.join('\n' + ' '.repeat(7))}\n`
-            
+
             // calcul padding spaces
             let spaces = err.argvi + this.name.length + 1
-            for (let i = 0;i < err.argvi; i++) {
+            for (let i = 0; i < err.argvi; i++) {
                 spaces += this.argv[i].length
             }
             str += `${argvLine}${" ".repeat(spaces)}`
-            
+
             // generate arrow
             const len = this.argv[err.argvi]?.length || 1
             err.start = err.start ?? 0
@@ -460,15 +460,15 @@ class CliParser {
 
     // formating
     protected formatOptions(options: Obj<CliArg>, prefix = "Options:"): string {
-        
+
         // remove alais from command
         const opts: Obj<CliArg> = {}
         for (const key in options) {
             opts[options[key].name] = options[key]
         }
-        
+
         const mem: Obj<number> = {}
-        
+
         // calcul padding space
         let padding = 0
 
@@ -488,7 +488,7 @@ class CliParser {
             const opt = opts[key]
 
             str += `${(opt.alias ? `-${opt.alias}, ` : '    ')}--${key}`
-            
+
             if (opt.params) {
                 str += opt.params.reduce((s, p) => `${s}<${p.type.constructor.name.toLowerCase()}> `, "")
             }
@@ -501,7 +501,7 @@ class CliParser {
     protected formatCommands(cmds: Obj<CliCmd>): string {
         let padding = 0
         for (const key in cmds) {
-            padding =  Math.max(padding, key.length)
+            padding = Math.max(padding, key.length)
         }
 
         let str = `Commands:\n`
@@ -544,7 +544,7 @@ class CliParser {
         let str = ""
 
         str += `Usage: ${this.name} `
-        str += this.options.info ?? `${!objectIsEmpty(this.commands)? "COMMAND" : ""} [OPTIONS]\n\n`
+        str += this.options.info ?? `${!objectIsEmpty(this.commands) ? "COMMAND" : ""} [OPTIONS]\n\n`
         str += this.description
         if (!objectIsEmpty(this.arguments)) {
             str += '\n\n' + this.formatOptions(this.arguments)
@@ -562,4 +562,4 @@ class CliParser {
 
 }
 
-export default  CliParser
+export default CliParser

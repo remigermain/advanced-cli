@@ -22,9 +22,9 @@ declare class CliParser {
     parse(argv: string[]): boolean;
     protected getCall(flags: CliFinal, args: Obj<CliArg>, cmd: CliCmd | undefined): CliFunc | undefined;
     get context(): CliContext;
-    protected createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | undefined): CliContext;
-    protected addError(text: string, argvi: number, start?: number | undefined, end?: number | undefined): void;
-    printError(max?: number | undefined): void;
+    protected createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd): CliContext;
+    protected addError(text: string, argvi: number, start?: number, end?: number): void;
+    printError(max?: number): void;
     protected formatOptions(options: Obj<CliArg>, prefix?: string): string;
     protected formatCommands(cmds: Obj<CliCmd>): string;
     commandUsage(cmd: CliCmd | string): void;

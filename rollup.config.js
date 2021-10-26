@@ -8,7 +8,7 @@ const def = {
   output: {
     dir: "dist",
     name: "index",
-    format: "umd",
+    format: "cjs",
     globals: {
       colorette: 'colorette'
     }

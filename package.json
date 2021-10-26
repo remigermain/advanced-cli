@@ -16,6 +16,7 @@
     "dist"
   ],
   "scripts": {
+    "es": "esbuild src/index.ts --outdir=./ff --bundle --external:colorette --platform=node --minify --target=esnext --format=cjs",
     "bench": "cd ./bench && node ./index.js",
     "build:bench": "yarn build && yarn bench",
     "build": "cross-env NODE_ENV=production npx rollup -c rollup.config.js",
@@ -47,6 +48,7 @@
     "benchmark": "^2.1.4",
     "core-js": "^3.18.3",
     "cross-env": "^7.0.3",
+    "esbuild": "^0.13.9",
     "eslint": "^8.0.1",
     "eslint-plugin-prettier": "^4.0.0",
     "husky": "^7.0.4",
