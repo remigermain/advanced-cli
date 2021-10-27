@@ -1,4 +1,4 @@
-import { red, bold, italic, yellow } from 'colorette'
+import { red, bold, italic } from 'colorette'
 
 
 import { objectIsEmpty, optimizedSplit, contains } from './utils'
@@ -64,7 +64,7 @@ class CliParser {
         } else if (arg.name.length < 2) {
             throw new Error(`name arguments '${arg.name}' need to be upper than one char`)
         } else if (this.options.inline && contains(arg.name, '=')) {
-            throw new Error(`name arguments '${arg.name}' can't contains '${yellow('=')}' in here name`)
+            throw new Error(`name arguments '${arg.name}' can't contains '=' in here name`)
         }
 
         // set empty params
