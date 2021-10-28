@@ -1,16 +1,24 @@
 import CliParserMock from "./parserMock"
-import {objectLength} from "../src/utils"
+import { objectLength } from "../src/utils"
+import { CliArg, CliArgSet } from "../src/declare"
 
 
 describe('commands', () => {
-    it('default arguments', () => {
-        const p = new CliParserMock("name", "description")
+    it('default arguments false', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addCommand('init', 'description')
         const commands = p.jestMockCommands()
         expect(commands.init.arguments).toEqual({})
     })
-    it('set', () => {
-        const p = new CliParserMock("name", "description")
+    it('default arguments true', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: true })
+        p.addCommand('init', 'description')
+        const commands = p.jestMockCommands()
+        expect(commands.init.arguments.help).toBeTruthy()
+    })
+
+    it('set without arugments', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addCommand('init', 'description')
         const commands = p.jestMockCommands()
         expect(objectLength(commands)).toEqual(1)
@@ -18,6 +26,40 @@ describe('commands', () => {
             name: 'init',
             description: 'description',
             arguments: {}
+        })
+    })
+
+    it('set with arugments', () => {
+        const p = new CliParserMock("name", "description", { defaultArg: false })
+
+        const root: CliArgSet = {
+            alias: 'l',
+            description: 'my description',
+            params: [
+                { type: Number, default: 5 },
+            ]
+        }
+        p.addCommand('init', 'description', {
+            arguments: {
+                root,
+            }
+        })
+        const commands = p.jestMockCommands()
+        expect(objectLength(commands)).toEqual(1)
+        expect(commands.init).toEqual({
+            name: 'init',
+            description: 'description',
+            arguments: {
+                root: {
+                    name: 'root',
+                    ...root
+                },
+                // @ts-ignore
+                [root.alias]: {
+                    name: 'root',
+                    ...root
+                }
+            }
         })
     })
 
@@ -37,7 +79,7 @@ describe('commands', () => {
     })
 
     it('arguments', () => {
-        const p = new CliParserMock("name", "description", {defaultArg: false})
+        const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addCommand('init', 'description', {
             arguments: {
                 root: {
@@ -96,7 +138,7 @@ describe('commands', () => {
         const errors = p.jestMockErrors()
         expect(errors.length).toEqual(1)
     })
-    
+
     it('command unknow', () => {
         const p = new CliParserMock("name", "description")
         const fn = jest.fn()
@@ -110,16 +152,16 @@ describe('commands', () => {
 
     it('command wrong flag', () => {
         const p = new CliParserMock("name", "description")
-        p.addCommand('init', 'description', { 
+        p.addCommand('init', 'description', {
             arguments: {
                 'root': {}
             },
         })
-        p.addCommand('run', 'description', { 
+        p.addCommand('run', 'description', {
             arguments: {
                 'tru': {}
             },
-         })
+        })
 
         const results = p.parse(['run', '--root'])
         expect(results).toBeFalsy()
@@ -127,16 +169,16 @@ describe('commands', () => {
 
     it('command flag', () => {
         const p = new CliParserMock("name", "description")
-        p.addCommand('init', 'description', { 
+        p.addCommand('init', 'description', {
             arguments: {
                 root: {}
             },
         })
-        p.addCommand('run', 'description', { 
+        p.addCommand('run', 'description', {
             arguments: {
                 tru: {}
             },
-         })
+        })
 
         const results = p.parse(['run', '--tru'])
         expect(results).toBeTruthy()

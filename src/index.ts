@@ -138,6 +138,14 @@ class CliParser {
             tcmd.arguments = args
         }
 
+        // add default help with usage command
+        if (this.options.defaultArg && !tcmd.arguments.help) {
+            tcmd.arguments.help = { ...this.arguments.help }
+            tcmd.arguments.help.call = () => {
+                this.commandUsage(tcmd.name)
+            }
+        }
+
         this.commands[name] = tcmd
     }
 
@@ -303,9 +311,13 @@ class CliParser {
         const flags: CliFinal = {}
         const anyArgs: string[] = []
 
-        while (index < argv.length && argv[index] !== this.options.stopFlags) {
+        while (index < argv.length) {
             const val = argv[index]
 
+            if (argv[index] === this.options.stopFlags) {
+                index++
+                break
+            }
             if (val[0] != '-') {
                 anyArgs.push(val)
                 index++
@@ -319,11 +331,6 @@ class CliParser {
                 this.addError(EMPTY_ARG('-'), index++)
             }
         }
-
-        if (argv[index] === this.options.stopFlags) {
-            index++
-        }
-
         // add all arguments after stopFlag
         while (index < argv.length) {
             anyArgs.push(argv[index++])
@@ -352,15 +359,6 @@ class CliParser {
 
             // merge global options with cmd options
             args = { ...args, ...cmd.arguments }
-
-            // change usage function to command usage
-            if (args.help) {
-                args.help.call = ({ parser, cmd }) => {
-                    if (cmd) {
-                        parser.commandUsage(cmd)
-                    }
-                }
-            }
         }
 
         const [flags, anyArgs] = this.parseFlags(argv, args, cmd ? 1 : 0) // skip first argv command
@@ -529,11 +527,9 @@ class CliParser {
             cmd = tcmd
         }
 
-        let str = ""
 
-        str += `Usage: ${this.name} ${cmd.name} `
-        str += this.options.info ?? '[OPTIONS]\n\n'
-        str += cmd.description
+        let str = `Usage: ${this.name} ${cmd.name} `
+        str += `${this.options.info ?? '[OPTIONS]\n\n'}${cmd.description}`
 
         if (this.arguments) {
             str += '\n\n' + this.formatOptions(this.arguments, "Global options:")
@@ -549,9 +545,7 @@ class CliParser {
 
 
     usage() {
-        let str = ""
-
-        str += `Usage: ${this.name} `
+        let str = `Usage: ${this.name} `
         str += this.options.info ?? `${!objectIsEmpty(this.commands) ? "COMMAND" : ""} [OPTIONS]\n\n`
         str += this.description
         if (!objectIsEmpty(this.arguments)) {
