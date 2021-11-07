@@ -172,7 +172,7 @@ describe('inline arguments', () => {
             params: [{ type: Number }, { type: String }]
         })
         expect(p.parse(['--foo=43=54'])).toBeFalsy()
-        expect(p.jestMockErrors().length).toEqual(1)
+        expect(p.jestMockErrors.length).toEqual(1)
     })
     it('empty egal', () => {
         const p = new CliParserMock("name", "description", { inline: true })
@@ -190,7 +190,7 @@ describe('inline arguments', () => {
             params: [{ type: Number }, { type: String }]
         })
         expect(p.parse(['--foo=43,,54'])).toBeFalsy()
-        expect(p.jestMockErrors().length).toEqual(1)
+        expect(p.jestMockErrors.length).toEqual(1)
     })
     it('multiple args', () => {
         const p = new CliParserMock("name", "description", { inline: true })
@@ -199,7 +199,7 @@ describe('inline arguments', () => {
             params: [{ type: Number }, { type: String }]
         })
         expect(p.parse(['--foo=43,54,54'])).toBeFalsy()
-        expect(p.jestMockErrors().length).toEqual(1)
+        expect(p.jestMockErrors.length).toEqual(1)
     })
     it('multiple egal', () => {
         const p = new CliParserMock("name", "description", { inline: true })
@@ -208,6 +208,6 @@ describe('inline arguments', () => {
             params: [{ type: Number }, { type: String }]
         })
         expect(p.parse(['--foo======='])).toBeFalsy()
-        expect(p.jestMockErrors().length).toEqual(1)
+        expect(p.jestMockErrors.length).toEqual(1)
     })
 })

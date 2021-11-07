@@ -124,7 +124,7 @@ describe('commands', () => {
         p.addCommand('init', 'description', { call: fn })
         const results = p.parse(['--flag', 'init'])
         expect(results).toBeFalsy()
-        const errors = p.jestMockErrors()
+        const errors = p.jestMockErrors
         expect(errors.length).toEqual(1)
         expect(fn).toBeCalledTimes(0)
     })
@@ -135,7 +135,7 @@ describe('commands', () => {
         const results = p.parse(['--help', 'init'])
 
         expect(results).toBeFalsy()
-        const errors = p.jestMockErrors()
+        const errors = p.jestMockErrors
         expect(errors.length).toEqual(1)
     })
 
@@ -145,7 +145,7 @@ describe('commands', () => {
         p.addCommand('init', 'description', { call: fn })
         const results = p.parse(['wrong'])
         expect(results).toBeFalsy()
-        const errors = p.jestMockErrors()
+        const errors = p.jestMockErrors
         expect(errors.length).toEqual(1)
         expect(fn).toBeCalledTimes(0)
     })

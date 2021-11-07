@@ -253,17 +253,14 @@ class CliParser {
             const isFlag = !isOverFlow && param.type !== Number && argv[index + i][0] === '-' || false
 
             try {
-                if (isFlag) {
+                if (isFlag || isOverFlow) {
                     undef++
                     allParams.push(this.checkDefault(param))
                 }
-                else if (isOverFlow)
-                    allParams.push(this.checkDefault(param))
                 else
                     allParams.push(this.convertValue(allParams, param, argv[index + i]))
             } catch (e: any) {
                 this.addError(INVALID_ARG(match, e.message), index)
-                return index
             }
 
         }
@@ -272,7 +269,7 @@ class CliParser {
 
     protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number) {
         if (val.length == 2) {
-            this.addError(EMPTY_ARG('--'), index, 2, val.length - 2)
+            this.addError(EMPTY_ARG('--'), index, 2)
             return index + 1
         }
         const name = val.substring(2)
@@ -281,7 +278,7 @@ class CliParser {
         const spli = (this.options.inline ? optimizedSplit(name, '=') : [name])
 
         if (choices[spli[0]] === undefined) {
-            this.addError(INVALID_FLAG(name), index, 2, val.length - 2)
+            this.addError(INVALID_FLAG(name), index, 2)
             return index + 1
         }
         if (!this.options.inline || spli.length == 1) {

@@ -225,7 +225,7 @@ In parser you have `p.usage()` or `p.commandUsage('search')` provide output like
 	with example above the usage output look this
 */
 
-`Usage: docker [OPTIONS] COMMAND
+`Usage: docker COMMAND [OPTIONS]
 
 A self-sufficient runtime for containers
 
