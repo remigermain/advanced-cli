@@ -2,18 +2,18 @@ import CliParser from "../src"
 
 class CliParserMock extends CliParser {
 
-    jestMockArguments() {
+    get jestMockArguments() {
         return this.arguments
     }
 
-    jestMockCommands() {
+    get jestMockCommands() {
         return this.commands
     }
 
     get jestMockErrors() {
         return this.errors
     }
-    jestMockOptions() {
+    get jestMockOptions() {
         return this.options
     }
     get jestMockErrorsLength() {

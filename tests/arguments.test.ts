@@ -30,7 +30,7 @@ describe('arguments', () => {
             const p = new CliParserMock("name", "description", { defaultArg: false })
             p.addArgument('root', { alias: 'r', description: 'my-description' })
             p.addArgument('gulp', { alias: 'g', description: 'my-other-description', call: fnc })
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(objectLength(args)).toEqual(4)
 
             const root = {
@@ -55,7 +55,7 @@ describe('arguments', () => {
             const fnc = () => { console.log('yop') }
             const p = new CliParserMock("name", "description", { defaultArg: false })
             p.addArgument('root', { description: 'my-description' })
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(objectLength(args)).toEqual(1)
             expect(args.root).toEqual({
                 name: 'root',

@@ -7,20 +7,20 @@ describe('commands', () => {
     it('default arguments false', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addCommand('init', 'description')
-        const commands = p.jestMockCommands()
+        const commands = p.jestMockCommands
         expect(commands.init.arguments).toEqual({})
     })
     it('default arguments true', () => {
         const p = new CliParserMock("name", "description", { defaultArg: true })
         p.addCommand('init', 'description')
-        const commands = p.jestMockCommands()
+        const commands = p.jestMockCommands
         expect(commands.init.arguments.help).toBeTruthy()
     })
 
     it('set without arugments', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addCommand('init', 'description')
-        const commands = p.jestMockCommands()
+        const commands = p.jestMockCommands
         expect(objectLength(commands)).toEqual(1)
         expect(commands.init).toEqual({
             name: 'init',
@@ -44,7 +44,7 @@ describe('commands', () => {
                 root,
             }
         })
-        const commands = p.jestMockCommands()
+        const commands = p.jestMockCommands
         expect(objectLength(commands)).toEqual(1)
         expect(commands.init).toEqual({
             name: 'init',
@@ -88,8 +88,8 @@ describe('commands', () => {
                 }
             }
         })
-        const commands = p.jestMockCommands()
-        const args = p.jestMockArguments()
+        const commands = p.jestMockCommands
+        const args = p.jestMockArguments
 
         expect(objectLength(commands)).toEqual(1)
         expect(objectLength(args)).toEqual(0)

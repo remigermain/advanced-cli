@@ -57,22 +57,22 @@ describe('options', () => {
     describe('default', () => {
         it('help set', () => {
             const p = new CliParserMock("name", "description")
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(args.help).toBeTruthy()
         })
         it('version not set ', () => {
             const p = new CliParserMock("name", "description")
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(args.version).toBeFalsy()
         })
         it('version set ', () => {
             const p = new CliParserMock("name", "description", {version: "1.0.1"})
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(args.version).toBeTruthy()
         })
         it('help and verison is not set ', () => {
             const p = new CliParserMock("name", "description", {version: "1.0.1", defaultArg: false})
-            const args = p.jestMockArguments()
+            const args = p.jestMockArguments
             expect(args.help).toBeFalsy()
             expect(args.version).toBeFalsy()
         })
