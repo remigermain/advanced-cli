@@ -121,19 +121,19 @@ describe('arguments', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addArgument('root', { alias: 'r', params: [{ type: Number }] })
         expect(p.parse(['-r', 'true'])).toBeFalsy()
-        expect(p.jestMockErrorsLength()).toEqual(1)
+        expect(p.jestMockErrorsLength).toEqual(1)
     })
     test('type invalid boolean', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addArgument('root', { alias: 'r', params: [{ type: Boolean }] })
         expect(p.parse(['-r', '1'])).toBeFalsy()
-        expect(p.jestMockErrorsLength()).toEqual(1)
+        expect(p.jestMockErrorsLength).toEqual(1)
     })
     test('type invalid date', () => {
         const p = new CliParserMock("name", "description", { defaultArg: false })
         p.addArgument('root', { alias: 'r', params: [{ type: Date }] })
         expect(p.parse(['-r', 'invalidate'])).toBeFalsy()
-        expect(p.jestMockErrorsLength()).toEqual(1)
+        expect(p.jestMockErrorsLength).toEqual(1)
     })
 
     describe('type valid number', () => {

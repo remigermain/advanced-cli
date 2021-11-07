@@ -11,6 +11,7 @@ export interface CliArgSet {
     description?: string;
     alias?: string;
     params?: CliArgParam[];
+    depends?: string[];
     call?: CliFunc;
 }
 export interface CliArg extends CliArgSet {
@@ -35,11 +36,8 @@ export interface CliParserOptions {
     defaultArg?: boolean;
     inline?: boolean;
 }
-export interface CliError {
+export interface CliError extends CliPos {
     text: string[];
-    argvi: number;
-    start?: number;
-    end?: number;
 }
 export interface CliContext {
     cmd?: CliCmd;
@@ -51,7 +49,15 @@ export interface CliContext {
     options: CliParserOptions;
     argv: string[];
 }
-export declare type CliFinal = Obj<any>;
+export interface CliFinal {
+    [key: string]: any;
+    _?: Obj<CliPos>;
+}
+export interface CliPos {
+    argvi: number;
+    start?: number;
+    end?: number;
+}
 export interface Obj<Type> {
     [key: string]: Type;
 }

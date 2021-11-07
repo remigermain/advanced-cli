@@ -16,7 +16,7 @@ class CliParserMock extends CliParser {
     jestMockOptions() {
         return this.options
     }
-    jestMockErrorsLength() {
+    get jestMockErrorsLength() {
         return this.errors.reduce((c, e) => c + e.text.length, 0)
     }
 }

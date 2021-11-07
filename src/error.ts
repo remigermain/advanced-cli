@@ -3,7 +3,10 @@ import { italic, yellow } from 'colorette'
 
 import { CliArgType } from './declare'
 
-export const INVALID_FLAG = (flag: string) => `Found argument '${yellow(`-${flag}`)}' which wasn't expected, or isn't valid in this context.`
+const prefix = (s: string): string => (s.length == 1 ? '-' : '--') + s
+
+
+export const INVALID_FLAG = (flag: string) => `Found argument '${yellow(prefix(flag))}' which wasn't expected, or isn't valid in this context.`
 
 export const EMPTY_ARG = (t: string) => `Empty argument '${yellow(t)}' which wasn't expected.`
 
@@ -13,9 +16,12 @@ export const CMD_FIRST = (cmd: string) => `First argument '${yellow(cmd)}' need 
 
 export const INVALID_ARG = (name: string, msg: string) => `Invalid arugments for flag '${yellow(name)}', ${msg}.`
 
-export const INVALID_LENGTH_ARG = (name: string, length: number | string) => `Need ${yellow(length)} arguments after flag '${yellow(`--${name}`)}'.`
+export const INVALID_LENGTH_ARG = (name: string, length: number | string) => `Need ${yellow(length)} arguments after flag '${yellow(prefix(name))}'.`
 
 export const INVALID_FORMATING = `Invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'.`
+
+
+export const DEPENDS_FLAGS = (name: string, depend: string) => `flags '${yellow(prefix(name))}' need flags '${yellow(prefix(depend))}'`
 
 // error throw when arguments is invalid
 

@@ -1,4 +1,4 @@
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare";
+import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc, CliPos } from "./declare";
 declare class CliParser {
     name: string;
     description: string;
@@ -16,11 +16,13 @@ declare class CliParser {
     protected convertValue(allParams: any[], param: CliArgParam, value: string): any;
     protected advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number;
     protected advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number;
-    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number): number;
-    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number): number;
-    protected parseFlags(argv: string[], choices: Obj<CliArg>, index?: number): [CliFinal, string[]];
+    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number): number;
+    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number): number;
+    protected parseFlags(argv: string[], choices: Obj<CliArg>, index?: number): [CliFinal, string[], Obj<CliPos>];
+    protected checkArgDepend(args: Obj<CliArg>): void;
     parse(argv: string[]): boolean;
     protected getCall(flags: CliFinal, args: Obj<CliArg>, cmd: CliCmd | undefined): CliFunc | undefined;
+    protected checkDependFlags(pos: Obj<CliPos>, args: Obj<CliArg>, flags: CliFinal): void;
     get context(): CliContext;
     protected createContext(flags: CliFinal, anyArgs: string[], cmd?: CliCmd | undefined): CliContext;
     protected addError(text: string, argvi: number, start?: number | undefined, end?: number | undefined): void;

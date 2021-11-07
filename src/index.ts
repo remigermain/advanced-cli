@@ -3,7 +3,7 @@ import { red, bold, italic } from 'colorette'
 
 import { objectIsEmpty, optimizedSplit, contains } from './utils'
 
-import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc } from "./declare"
+import { CliArgSet, CliArg, CliCmdSet, CliCmd, CliParserOptions, CliError, CliContext, CliFinal, Obj, CliArgParam, CliFunc, CliPos } from "./declare"
 
 import {
     INVALID_FLAG,
@@ -14,6 +14,7 @@ import {
     INVALID_LENGTH_ARG,
     INVALID_FORMATING,
     NEED_ARGUMENT,
+    DEPENDS_FLAGS,
     INVALID_NUMBER,
     INVALID_BOOL,
     INVALID_DATE
@@ -190,7 +191,6 @@ class CliParser {
         const arg = choices[_spliter[0]]
         const allParams: any[] = []
 
-        // addf lag
         cliArgs[arg.name] = allParams
         if (arg.alias) {
             cliArgs[arg.alias] = allParams
@@ -235,6 +235,7 @@ class CliParser {
 
         // asign flag
         cliArgs[arg.name] = allParams
+
         if (arg.alias) {
             cliArgs[arg.alias] = allParams
         }
@@ -269,7 +270,7 @@ class CliParser {
         return index + arg.params.length - undef
     }
 
-    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number) {
+    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number) {
         if (val.length == 2) {
             this.addError(EMPTY_ARG('--'), index, 2, val.length - 2)
             return index + 1
@@ -284,12 +285,14 @@ class CliParser {
             return index + 1
         }
         if (!this.options.inline || spli.length == 1) {
+            pos[name] = {argvi: index, start: 2}
             return this.advFlag(argv, index + 1, flags, choices[name], name)
         }
+        pos[spli[0]] = {argvi: index, start: 2, end: spli[0].length}
         return this.advFlagInline(argv, index, choices, flags, spli)
     }
 
-    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, index: number) {
+    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number) {
         // simple
 
         let mem = index
@@ -298,6 +301,7 @@ class CliParser {
             const value = choices[val[i]]
 
             if (value !== undefined) {
+                pos[val[i]] = {argvi: mem, start: i, end:1}
                 mem = this.advFlag(argv, mem + 1, flags, value, val[i])
             } else {
                 this.addError(INVALID_FLAG(val[i]), index, i, 1)
@@ -307,8 +311,9 @@ class CliParser {
 
     }
 
-    protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[]] {
+    protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[], Obj<CliPos>] {
         const flags: CliFinal = {}
+        const pos: Obj<CliPos> = {}
         const anyArgs: string[] = []
 
         while (index < argv.length) {
@@ -323,10 +328,10 @@ class CliParser {
                 index++
             }
             else if (val[1] == '-') {
-                index = this.parseMulti(flags, argv, val, choices, index)
+                index = this.parseMulti(flags, argv, val, choices, pos, index)
             }
             else if (val.length != 1) {
-                index = this.parseSimple(flags, argv, val, choices, index)
+                index = this.parseSimple(flags, argv, val, choices, pos, index)
             } else {
                 this.addError(EMPTY_ARG('-'), index++)
             }
@@ -336,7 +341,31 @@ class CliParser {
             anyArgs.push(argv[index++])
         }
 
-        return [flags, anyArgs]
+        return [flags, anyArgs, pos]
+    }
+
+    protected checkArgDepend(args: Obj<CliArg>) {
+        
+        for (const name in args) {
+            const arg = args[name]
+            if (arg.depends && arg.depends.length) {
+                const depends = new Set(arg.depends)
+                if (depends.size != arg.depends?.length) {
+                    throw new Error(`duplicate depend name in flag '${arg.name}'`)
+                }
+                arg.depends.forEach(e => {
+                    const ty = typeof e
+                    if (ty !== 'string') {
+                        throw new Error(`depend name '${e}' need to be a string, not '${ty}'`)
+                    }
+                    else if (e.length == 1) {
+                        throw new Error(`depend '${e}' c'ant be a alias`)
+                    } else if (!(e in args)) {
+                        throw new Error(`c'ant find '${e}' in arguments`)
+                    }
+                })
+            }
+        }
     }
 
     parse(argv: string[]): boolean {
@@ -361,10 +390,13 @@ class CliParser {
             args = { ...args, ...cmd.arguments }
         }
 
-        const [flags, anyArgs] = this.parseFlags(argv, args, cmd ? 1 : 0) // skip first argv command
+        // need to check it befor parse
+        this.checkArgDepend(args)
+
+        const [flags, anyArgs, flagPos] = this.parseFlags(argv, args, cmd ? 1 : 0) // skip first argv command
+        this.checkDependFlags(flagPos, args, flags)
 
         const ctx = this.createContext(flags, anyArgs, cmd)
-
         if (this.errors.length) {
             return false
         }
@@ -385,6 +417,25 @@ class CliParser {
         }
         if (cmd && cmd.call) {
             return cmd.call
+        }
+    }
+
+    protected checkDependFlags(pos: Obj<CliPos>, args: Obj<CliArg>, flags: CliFinal): void {
+        const errs: [string, string][] = []
+        for (const name in pos) {
+            const arg = args[name]
+            if (arg.depends && arg.depends.length) {
+                arg.depends.forEach(depend => {
+                    if (!(depend in flags)) {
+                        const ex = errs.find(e => (e[0] === name || e[0] === arg.alias) && e[1] === depend)
+                        if (!ex) {
+                            errs.push([name, depend])
+                            // @ts-ignore
+                            this.addError(DEPENDS_FLAGS(name, depend), pos[name].argvi, pos[name].start, pos[name].end)
+                        }
+                    }
+                })
+            }
         }
     }
 
@@ -467,7 +518,7 @@ class CliParser {
     // formating
     protected formatOptions(options: Obj<CliArg>, prefix = "Options:"): string {
 
-        // remove alais from command
+        // remove alias from command
         const opts: Obj<CliArg> = {}
         for (const key in options) {
             opts[options[key].name] = options[key]

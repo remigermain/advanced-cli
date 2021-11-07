@@ -188,6 +188,7 @@ various options is available
     description: string,	//	a description for your arguments
     alias: string,		//	a alias (ex: `h` for `help`)
     params: [ #Params ],	//	a list with object Params
+    depends: string[], // list for depended arguments (like `--cert-path` needed for `--cert-enable`)
     call: Function		//	function is calling if arguments is set (like `--help` is print usage and exit)
 }
 
@@ -306,6 +307,10 @@ docker search --prop
               ~~^^^^
 
 --------------------------|
+
+error: flags '--ssl-key' need flags '--ssl-cert'
+name file root --ssl-key 0xiiifr4353
+               ~~^^^^^^^
 
 // With inline mode
 

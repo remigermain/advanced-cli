@@ -25,5 +25,6 @@ module.exports = {
     "max-len": ["error", { code: 200 }],
     "no-console": "off",
     "@typescript-eslint/no-explicit-any": ["off"],
+    "@typescript-eslint/ban-ts-comment": ["off"]
   }
 }

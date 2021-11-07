@@ -181,7 +181,7 @@ describe('inline arguments', () => {
             params: [{ type: Number }, { type: String }]
         })
         expect(p.parse(['--foo='])).toBeFalsy()
-        expect(p.jestMockErrorsLength()).toEqual(2)
+        expect(p.jestMockErrorsLength).toEqual(2)
         })
     it('multiple comat', () => {
         const p = new CliParserMock("name", "description", { inline: true })
