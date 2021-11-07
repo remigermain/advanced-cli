@@ -547,7 +547,7 @@ class CliParser {
             str += `${(opt.alias ? `-${opt.alias}, ` : '    ')}--${key}`
 
             if (opt.params) {
-                str += opt.params.reduce((s, p) => `${s}<${p.type.constructor.name.toLowerCase()}> `, "")
+                str += opt.params.reduce((s, p) => `${s}<${p.type.name.toLowerCase()}> `, "")
             }
             // space padding 
             str += `${" ".repeat(padding - mem[key] + 1)}${opt.description ?? italic("no information.")}\n`

@@ -25,7 +25,7 @@ export const DEPENDS_FLAGS = (name: string, depend: string) => `flags '${yellow(
 
 // error throw when arguments is invalid
 
-export const NEED_ARGUMENT = (type: CliArgType) => `need '${yellow(type.constructor.name.toLowerCase())}' arguments.`
+export const NEED_ARGUMENT = (type: CliArgType) => `need '${yellow(type.name.toLowerCase())}' arguments.`
 
 export const INVALID_BOOL = `need a valid boolean, choice are '${italic(yellow('true'))}' or '${italic(yellow('false'))}'.`
 
