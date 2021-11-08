@@ -22,6 +22,7 @@ export interface CliArgSet {
     alias?: string,
     params?: CliArgParam[],
     depends?: string[],
+    multiple?: boolean,
     call?: CliFunc
 }
 

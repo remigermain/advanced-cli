@@ -17,7 +17,8 @@ import {
     DEPENDS_FLAGS,
     INVALID_NUMBER,
     INVALID_BOOL,
-    INVALID_DATE
+    INVALID_DATE,
+    DUPLICATE_FLAGS
 } from "./error"
 
 class CliParser {
@@ -187,15 +188,28 @@ class CliParser {
         return value
     }
 
-    protected advFlagInline(argv: string[], index: number, choices: Obj<CliArg>, cliArgs: CliFinal, _spliter: string[]): number {
-        const arg = choices[_spliter[0]]
+    protected assginFlag(cliArgs: CliFinal, arg: CliArg, pos: Obj<CliPos[]>): any[] {
         const allParams: any[] = []
-
-        cliArgs[arg.name] = allParams
-        if (arg.alias) {
-            cliArgs[arg.alias] = allParams
+        if (cliArgs[arg.name] == undefined) {
+            cliArgs[arg.name] = (arg.multiple ? [allParams] : allParams)
+            if (arg.alias) {
+                cliArgs[arg.alias] = cliArgs[arg.name]
+            }
         }
+        else if (!arg.multiple) {
+            const last = pos[arg.name][pos[arg.name].length - 1]
+            this.addError(DUPLICATE_FLAGS(arg.name), last.argvi, last.start, last.end)
+        } else {
+            cliArgs[arg.name].push(allParams)
+        }
+        return allParams
 
+    }
+
+    protected advFlagInline(index: number, choices: Obj<CliArg>, cliArgs: CliFinal, pos: Obj<CliPos[]>, _spliter: string[]): number {
+        const arg = choices[_spliter[0]]
+        
+        const allParams = this.assginFlag(cliArgs, arg, pos)
         // check key=val,... == [key, val, ....]
         if (_spliter.length != 2) {
             this.addError(INVALID_FORMATING, index, 2)
@@ -230,15 +244,9 @@ class CliParser {
         return index + 1
     }
 
-    protected advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, match: string): number {
-        const allParams: any[] = []
+    protected advFlag(argv: string[], index: number, cliArgs: CliFinal, arg: CliArg, pos: Obj<CliPos[]>,match: string): number {
 
-        // asign flag
-        cliArgs[arg.name] = allParams
-
-        if (arg.alias) {
-            cliArgs[arg.alias] = allParams
-        }
+        const allParams = this.assginFlag(cliArgs, arg, pos)
 
         if (!arg.params.length) {
             return index
@@ -267,7 +275,7 @@ class CliParser {
         return index + arg.params.length - undef
     }
 
-    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number) {
+    protected parseMulti(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos[]>, index: number) {
         if (val.length == 2) {
             this.addError(EMPTY_ARG('--'), index, 2)
             return index + 1
@@ -282,14 +290,14 @@ class CliParser {
             return index + 1
         }
         if (!this.options.inline || spli.length == 1) {
-            pos[name] = {argvi: index, start: 2}
-            return this.advFlag(argv, index + 1, flags, choices[name], name)
+            pos[name].push({argvi: index, start: 2})
+            return this.advFlag(argv, index + 1, flags, choices[name], pos, name)
         }
-        pos[spli[0]] = {argvi: index, start: 2, end: spli[0].length}
-        return this.advFlagInline(argv, index, choices, flags, spli)
+        pos[spli[0]].push({argvi: index, start: 2, end: spli[0].length})
+        return this.advFlagInline(index, choices, flags, pos, spli)
     }
 
-    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos>, index: number) {
+    protected parseSimple(flags: CliFinal, argv: string[], val: string, choices: Obj<CliArg>, pos: Obj<CliPos[]>, index: number) {
         // simple
 
         let mem = index
@@ -298,8 +306,8 @@ class CliParser {
             const value = choices[val[i]]
 
             if (value !== undefined) {
-                pos[val[i]] = {argvi: mem, start: i, end:1}
-                mem = this.advFlag(argv, mem + 1, flags, value, val[i])
+                pos[val[i]].push({argvi: mem, start: i, end:1})
+                mem = this.advFlag(argv, mem + 1, flags, value, pos, val[i])
             } else {
                 this.addError(INVALID_FLAG(val[i]), index, i, 1)
             }
@@ -308,10 +316,15 @@ class CliParser {
 
     }
 
-    protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[], Obj<CliPos>] {
+    protected parseFlags(argv: string[], choices: Obj<CliArg>, index = 0): [CliFinal, string[], Obj<CliPos[]>] {
         const flags: CliFinal = {}
-        const pos: Obj<CliPos> = {}
+        const pos: Obj<CliPos[]> = {}
         const anyArgs: string[] = []
+        
+        // initialize memory pos
+        for (const e in choices) {
+            pos[e] = []
+        }
 
         while (index < argv.length) {
             const val = argv[index]
@@ -417,7 +430,7 @@ class CliParser {
         }
     }
 
-    protected checkDependFlags(pos: Obj<CliPos>, args: Obj<CliArg>, flags: CliFinal): void {
+    protected checkDependFlags(pos: Obj<CliPos[]>, args: Obj<CliArg>, flags: CliFinal): void {
         const errs: [string, string][] = []
         for (const name in pos) {
             const arg = args[name]
@@ -427,8 +440,9 @@ class CliParser {
                         const ex = errs.find(e => (e[0] === name || e[0] === arg.alias) && e[1] === depend)
                         if (!ex) {
                             errs.push([name, depend])
-                            // @ts-ignore
-                            this.addError(DEPENDS_FLAGS(name, depend), pos[name].argvi, pos[name].start, pos[name].end)
+                            pos[name].forEach(ep => {
+                                this.addError(DEPENDS_FLAGS(name, depend), ep.argvi, ep.start, ep.end)
+                            })
                         }
                     }
                 })

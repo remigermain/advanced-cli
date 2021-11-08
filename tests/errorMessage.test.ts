@@ -138,7 +138,7 @@ describe('arguments', () => {
     it('miltiple unknow alias', () => {
         const p = new CliParserMock("name", "description")
         p.addArgument('root', {alias: 'r'})
-        expect(p.parse(['42', '-rfrgu'])).toBeFalsy()
+        expect(p.parse(['42', '-rfgu'])).toBeFalsy()
         expect(p.jestMockErrors).toEqual([{
                 text: [
                     Err.INVALID_FLAG('f'),
@@ -152,7 +152,7 @@ describe('arguments', () => {
                     Err.INVALID_FLAG('g'),
                 ],
                 argvi: 1, 
-                start: 4,
+                start: 3,
                 end: 1
             },
             {
@@ -160,7 +160,7 @@ describe('arguments', () => {
                     Err.INVALID_FLAG('u'),
                 ],
                 argvi: 1, 
-                start: 5,
+                start: 4,
                 end: 1
             },
         ])

@@ -20,6 +20,7 @@ export const INVALID_LENGTH_ARG = (name: string, length: number | string) => `Ne
 
 export const INVALID_FORMATING = `Invalid formating flag, need to be '${yellow('flag')}=${yellow('value')}(${yellow(',value...')})'.`
 
+export const DUPLICATE_FLAGS = (name: string) => `flags '${yellow(prefix(name))}' as already set.`
 
 export const DEPENDS_FLAGS = (name: string, depend: string) => `flags '${yellow(prefix(name))}' need flags '${yellow(prefix(depend))}'`
 

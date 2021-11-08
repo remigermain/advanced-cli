@@ -189,6 +189,7 @@ various options is available
     alias: string,		//	a alias (ex: `h` for `help`)
     params: [ #Params ],	//	a list with object Params
     depends: string[], // list for depended arguments (like `--cert-path` needed for `--cert-enable`)
+    multiple: false, // a arguments can be set multiple time (like `--player remi --player renaud --player flo`), the results `[ ["remi"], ["renaud"], ["flo"] ]`
     call: Function		//	function is calling if arguments is set (like `--help` is print usage and exit)
 }
 
@@ -307,12 +308,21 @@ docker search --prop
               ~~^^^^
 
 --------------------------|
+// options `depends`
 
 error: flags '--ssl-key' need flags '--ssl-cert'
 name file root --ssl-key 0xiiifr4353
                ~~^^^^^^^
 
-// With inline mode
+--------------------------|
+// options `multiple` disabled
+
+error: flags '--root' as already set.
+name 42 --root ddd 32 true --root rrge 44 false
+                           ~~^^^^
+
+--------------------------|
+// options `inline` enable
 
 error: Invalid arugments for flag 'group', invalid group
 docker search --group=tu,54
