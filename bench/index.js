@@ -3,21 +3,21 @@ const { Suite } = require('benchmark');
 
 console.log('Load Times:');
 
-console.time('nopt');
-const nopt = require('nopt');
-console.timeEnd('nopt');
+// console.time('nopt');
+// const mri = require('nopt');
+// console.timeEnd('nopt');
 
-console.time('yargs-parser');
-const yargs = require('yargs-parser');
-console.timeEnd('yargs-parser');
+// console.time('yargs-parser');
+// const mri = require('yargs-parser');
+// console.timeEnd('yargs-parser');
 
-console.time('minimist');
-const minimist = require('minimist');
-console.timeEnd('minimist');
+// console.time('minimist');
+// const mri = require('minimist');
+// console.timeEnd('minimist');
 
-console.time('mri');
-const mri = require('mri');
-console.timeEnd('mri');
+// console.time('mri');
+// const mri = require('mri');
+// console.timeEnd('mri');
 
 console.time('advanced-cli');
 const advCli = require('../dist/index');
@@ -29,13 +29,12 @@ const small = ['-b', '--bool', '--no-meep', '--multi=baz']
 
 const inline = false
 
-console.log(`\nBenchmark: small: [${small.join(", ")}]`);
 const benchSmall = new Suite()
 benchSmall
-	.add('minimist     ', () => minimist(small))
-	.add('mri          ', () => mri(small))
-	.add('nopt         ', () => nopt(small))
-	.add('yargs-parser ', () => yargs(small))
+// .add('minimist     ', () => minimist(small))
+// .add('mri          ', () => mri(small))
+	// .add('nopt         ', () => nopt(small))
+	// .add('yargs-parser ', () => yargs(small))
 	.add('advanced-cli ', () => {
 		const parser = new advCli("name", "description", { inline })
 		parser.addArgument('other', { alias: 'b' })
@@ -49,15 +48,15 @@ benchSmall
 		return parser.parse(small)
 	})
 	.on('cycle', e => console.log(String(e.target)))
-	.run();
-
+console.log(`\nBenchmark: small: [${small.join(", ")}]`);
+benchSmall.run()
 console.log(`\nBenchmark: big: [${big.join(", ")}]`);
 const benchBig = new Suite()
 benchBig
-	.add('minimist     ', () => minimist(big))
-	.add('mri          ', () => mri(big))
-	.add('nopt         ', () => nopt(big))
-	.add('yargs-parser ', () => yargs(big))
+	// .add('minimist     ', () => minimist(big))
+	// .add('mri          ', () => mri(big))
+	// .add('nopt         ', () => nopt(big))
+	// .add('yargs-parser ', () => yargs(big))
 	.add('advanced-cli ', () => {
 		const parser = new advCli("name", "description", { inline })
 		parser.addArgument('other', { alias: 'b' })
@@ -80,4 +79,5 @@ benchBig
 		return parser.parse(big)
 	})
 	.on('cycle', e => console.log(String(e.target)))
-	.run();
+
+	benchBig.run()

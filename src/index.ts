@@ -411,23 +411,25 @@ class CliParser {
             return false
         }
 
-        const toCall = this.getCall(flags, args, cmd)
-        if (toCall) {
-            toCall(ctx)
+        const toCalls = this.getCall(flags, args, cmd)
+        if (toCalls.length) {
+            toCalls[0](ctx)
         }
         return true
     }
 
-    protected getCall(flags: CliFinal, args: Obj<CliArg>, cmd: CliCmd | undefined): CliFunc | undefined {
+    protected getCall(flags: CliFinal, args: Obj<CliArg>, cmd: CliCmd | undefined): CliFunc[] {
+        const fncCalls: CliFunc[] = []
         for (const key in flags) {
             const toCall = args[key].call
             if (toCall) {
-                return toCall
+                fncCalls.push(toCall)
             }
         }
         if (cmd && cmd.call) {
-            return cmd.call
+            fncCalls.push(cmd.call)
         }
+        return fncCalls
     }
 
     protected checkDependFlags(pos: Obj<CliPos[]>, args: Obj<CliArg>, flags: CliFinal): void {
