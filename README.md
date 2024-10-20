@@ -1,8 +1,8 @@
 # Advanced-cli
 
+<a href="https://u8views.com/github/remigermain"><img src="https://u8views.com/api/v1/github/profiles/66946113/views/day-week-month-total-count.svg" width="1px" height="1px"></a>
 [![CI](https://github.com/remigermain/advanced-cli/actions/workflows/node.js.yml/badge.svg)](https://github.com/remigermain/advanced-cli/actions/workflows/node.js.yml)
 [![build](https://img.shields.io/npm/v/advanced-cli)](https://www.npmjs.com/package/advanced-cli)
-
 A Cli parser with advanced arguments/command, very fast execution (more than [mri](https://github.com/lukeed/mri)).
 The parser is inspired by python argsparser, the output is look like docker or cargo(rust lang) cli.
 You can add arguments, command, command arguments, efficiency errors, very fast, chained alias ( ex: `-lah` ), inline arguments (ex: `--foo=bar,boo,baz`)
